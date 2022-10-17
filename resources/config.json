@@ -1,0 +1,14 @@
+{
+	"server": {
+		"ip": "0.0.0.0",
+		"port": 80
+	},
+
+	"database": {
+		"ip": "127.0.0.1",
+		"port": 1337,
+		"database": "Chess",
+		"username": "root",
+		"password": "MedicBag"
+	}
+}
