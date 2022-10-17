@@ -27,3 +27,10 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+
+## The rest
+
+/.idea/
+/logs/
+/config/
+/dependencies/
