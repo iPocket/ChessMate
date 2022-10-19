@@ -22,7 +22,7 @@ public class Main {
 		Logger.getInstance().log("Starting " + NAME + " v" + VERSION + "...");
 
 		String configPath;
-		if(args.length > 0){ // should probably not be doing this
+		if(args.length > 0){
 			configPath = args[0];
 		} else {
 			configPath = WORKING_DIRECTORY + File.separator + "config" + File.separator + "config.json";
@@ -36,7 +36,7 @@ public class Main {
 
 			if(configFile.createNewFile()){
 				URL defaultConfigUrl = Main.class.getClassLoader().getResource("config.json");
-				assert defaultConfigUrl != null; //config file should always exist at resources root
+				assert defaultConfigUrl != null; //config file should always exist in the bundled resources root
 				File defaultConfigFile = new File(defaultConfigUrl.toURI());
 				Files.copy(defaultConfigFile.toPath(), configFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
 			} else {
@@ -49,5 +49,7 @@ public class Main {
 		Logger.getInstance().log("Loading config file...");
 		JSONConfig config = new JSONConfig(configFile);
 		Logger.getInstance().log("Successfully loaded config file.");
+		String ip = config.getByPointer("database.ip");
+		Logger.getInstance().log(ip);
 	}
 }

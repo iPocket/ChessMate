@@ -60,11 +60,6 @@ public final class Logger {
 		LocalDateTime now = LocalDateTime.now();
 		String logFile = logDirectory + File.separator + now.format(DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm-ss"));
 
-//		int i = 1;
-//		while(new File(logFile + "--" + i + ".log").exists()){
-//			i++;
-//		}
-
 		this.logStream = new PrintStream(logFile + /*"--" + i +*/ ".log");
 	}
 

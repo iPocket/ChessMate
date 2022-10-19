@@ -8,13 +8,13 @@ import org.json.simple.parser.ParseException;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.Arrays;
 
 public final class JSONConfig {
 
 	@Getter
 	private final File file;
 
-	@Getter
 	private final JSONObject config;
 
 	public JSONConfig(File file) throws IOException, ParseException {
@@ -86,5 +86,20 @@ public final class JSONConfig {
 
 	public short getShort(String field){
 		return this.getShort(this.config, field);
+	}
+
+	public <T> T getByPointer(String pointer) {
+		String[] splitPointer = pointer.split("\\.");
+		JSONObject finalObject = this.getObject(splitPointer[0]);
+		for(String p : Arrays.copyOfRange(splitPointer, 1, splitPointer.length - 1)){
+			try {
+				finalObject = this.getObject(finalObject, p);
+			} catch (ClassCastException e){
+//				throw new Exception("The field " + p + " in " + pointer + " is either not an object" +
+//						" or does not exist in "+  this.file.getName());
+				return null;
+			}
+		}
+		return (T) finalObject.get(splitPointer[splitPointer.length - 1]);
 	}
 }
