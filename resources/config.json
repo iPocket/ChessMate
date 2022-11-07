@@ -6,9 +6,9 @@
 
 	"database": {
 		"ip": "127.0.0.1",
-		"port": 1337,
-		"database": "Chess",
-		"username": "root",
-		"password": "MedicBag"
+		"port": "3306",
+		"database": "chess",
+		"username": "admin",
+		"password": "some_pass"
 	}
 }

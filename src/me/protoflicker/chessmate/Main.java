@@ -23,7 +23,7 @@ public class Main {
 
 		String configPath;
 		if(args.length > 0){
-			configPath = args[0];
+			configPath = args[0]; // TODO parse config path properly
 		} else {
 			configPath = WORKING_DIRECTORY + File.separator + "config" + File.separator + "config.json";
 		}
@@ -31,7 +31,7 @@ public class Main {
 		File configFile = new File(configPath);
 		if(!configFile.exists()){
 			Logger.getInstance().log("The provided config file path (" + configPath + ") does not exist. " +
-					"Creating a new one at this path...", Logger.LogLevel.WARNING);
+					"Creating a new one at this path...", Logger.LogLevel.NOTICE);
 
 
 			if(configFile.createNewFile()){
@@ -50,6 +50,9 @@ public class Main {
 		JSONConfig config = new JSONConfig(configFile);
 		Logger.getInstance().log("Successfully loaded config file.");
 		String ip = config.getByPointer("database.ip");
-		Logger.getInstance().log(ip);
+		Logger.getInstance().log(ip, Logger.LogLevel.NOTICE);
+
+		Server.init(config);
+		Server.getInstance().cycle();
 	}
 }

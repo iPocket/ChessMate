@@ -90,16 +90,20 @@ public final class JSONConfig {
 
 	public <T> T getByPointer(String pointer) {
 		String[] splitPointer = pointer.split("\\.");
-		JSONObject finalObject = this.getObject(splitPointer[0]);
+		JSONObject finalObject = getObject(splitPointer[0]);
 		for(String p : Arrays.copyOfRange(splitPointer, 1, splitPointer.length - 1)){
 			try {
-				finalObject = this.getObject(finalObject, p);
+				finalObject = getObject(finalObject, p);
 			} catch (ClassCastException e){
 //				throw new Exception("The field " + p + " in " + pointer + " is either not an object" +
 //						" or does not exist in "+  this.file.getName());
 				return null;
 			}
 		}
-		return (T) finalObject.get(splitPointer[splitPointer.length - 1]);
+		try {
+			return (T) finalObject.get(splitPointer[splitPointer.length - 1]);
+		} catch (ClassCastException e){
+			return null;
+		}
 	}
 }

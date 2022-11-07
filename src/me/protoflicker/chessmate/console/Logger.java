@@ -60,7 +60,7 @@ public final class Logger {
 		LocalDateTime now = LocalDateTime.now();
 		String logFile = logDirectory + File.separator + now.format(DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm-ss"));
 
-		this.logStream = new PrintStream(logFile + /*"--" + i +*/ ".log");
+		this.logStream = new PrintStream(logFile + ".log");
 	}
 
 	public void log(String text){
@@ -74,5 +74,13 @@ public final class Logger {
 				+ level + ANSIFormat.RESET + "] " + text;
 		System.out.println(output + ANSIFormat.RESET);
 		this.logStream.println(ANSIFormat.strip(output));
+	}
+
+	public void logStackTrace(Throwable e, LogLevel level){
+		Logger.getInstance().log(e.getClass().getName() + ": " + e.getMessage(), level);
+		for(StackTraceElement element : e.getStackTrace()){
+			Logger.getInstance().log("----> at " + element.getClassName() + "." + element.getMethodName()
+					+ "(" + element.getFileName() + ":" + element.getLineNumber() + ")", level);
+		}
 	}
 }
