@@ -1,20 +1,17 @@
 package me.protoflicker.chessmate.data;
 
 import java.sql.Connection;
+import java.sql.SQLException;
 
 public interface Database {
 
 	Connection getConnection();
 
-	boolean connect();
+	void connect() throws SQLException;
 
 	void disconnect();
 
 	boolean isConnected();
 
-	void refresh();
-
-	String getIp();
-
-	String getPort();
+	void refresh() throws SQLException;
 }

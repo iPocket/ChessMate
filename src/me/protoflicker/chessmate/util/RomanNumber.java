@@ -2,7 +2,7 @@ package me.protoflicker.chessmate.util;
 
 import java.util.TreeMap;
 
-public class RomanNumber {
+public abstract class RomanNumber {
 
     private final static TreeMap<Integer, String> map = new TreeMap<>();
 
@@ -22,11 +22,8 @@ public class RomanNumber {
         map.put(1, "I");
     }
 
-    public static String toRoman(int number) {
+    public static String toRoman(int number){
         int i = map.floorKey(number);
-        if(number == i){
-            return map.get(number);
-        }
-        return map.get(i) + toRoman(number-i);
+        return number == i ? map.get(number) : map.get(i) + toRoman(number - i);
     }
 }

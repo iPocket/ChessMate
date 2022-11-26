@@ -17,5 +17,6 @@
     <orderEntry type="library" name="lombok" level="project" />
     <orderEntry type="library" name="guava-31.1-jre" level="project" />
     <orderEntry type="library" name="mariadb-java-client-3.0.8" level="project" />
+    <orderEntry type="module" module-name="ChessMateProtocol" />
   </component>
 </module>

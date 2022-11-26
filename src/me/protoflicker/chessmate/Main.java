@@ -16,16 +16,19 @@ public class Main {
 	public static final String NAME = "ChessMate";
 	public static final String VERSION = "0.01";
 
+	public static final Thread MAIN_THREAD = Thread.currentThread();
+
 	public static void main(String[] args) throws Exception {
 		Logger.init();
 
 		Logger.getInstance().log("Starting " + NAME + " v" + VERSION + "...");
 
+		String configFolder = WORKING_DIRECTORY + File.separator + "config";
 		String configPath;
 		if(args.length > 0){
 			configPath = args[0]; // TODO parse config path properly
 		} else {
-			configPath = WORKING_DIRECTORY + File.separator + "config" + File.separator + "config.json";
+			configPath = configFolder + File.separator + "config.json";
 		}
 
 		File configFile = new File(configPath);
@@ -33,24 +36,36 @@ public class Main {
 			Logger.getInstance().log("The provided config file path (" + configPath + ") does not exist. " +
 					"Creating a new one at this path...", Logger.LogLevel.NOTICE);
 
+			File configFolderFile = new File(configFolder);
+			if(!configFolderFile.exists()){
+				if(!configFolderFile.mkdir()){
+					throw new FileSystemException("Unable to create new config folder at " + configFolderFile.getPath());
+				}
+			}
 
-			if(configFile.createNewFile()){
-				URL defaultConfigUrl = Main.class.getClassLoader().getResource("config.json");
-				assert defaultConfigUrl != null; //config file should always exist in the bundled resources root
-				File defaultConfigFile = new File(defaultConfigUrl.toURI());
-				Files.copy(defaultConfigFile.toPath(), configFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-			} else {
-				throw new FileSystemException("Unable to create new config file at " + configFile.getPath());
+			try {
+				if(configFile.createNewFile()){
+					URL defaultConfigUrl = Main.class.getClassLoader().getResource("config.json");
+					assert defaultConfigUrl != null; //config file should always exist in the bundled resources root
+					File defaultConfigFile = new File(defaultConfigUrl.toURI());
+					Files.copy(defaultConfigFile.toPath(), configFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+				}
+			} catch (Exception e){
+				Logger.getInstance().log("Unable to create new config file at " + configFile.getPath(), Logger.LogLevel.FATAL);
+				throw new RuntimeException(e);
 			}
 
 			Logger.getInstance().log("Successfully created a new config file at " + configFile.getPath());
 		}
 
 		Logger.getInstance().log("Loading config file...");
-		JSONConfig config = new JSONConfig(configFile);
-		Logger.getInstance().log("Successfully loaded config file.");
-		String ip = config.getByPointer("database.ip");
-		Logger.getInstance().log(ip, Logger.LogLevel.NOTICE);
+		JSONConfig config;
+		try {
+			config = new JSONConfig(configFile);
+		} catch (Exception e){
+			Logger.getInstance().log("Failed to load config file:", Logger.LogLevel.FATAL);
+			throw new RuntimeException(e);
+		}
 
 		Server.init(config);
 		Server.getInstance().cycle();

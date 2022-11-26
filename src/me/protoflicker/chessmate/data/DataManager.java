@@ -1,30 +1,39 @@
 package me.protoflicker.chessmate.data;
 
 import lombok.Getter;
-import me.protoflicker.chessmate.data.manager.managers.UserManager;
+import me.protoflicker.chessmate.data.record.UserManager;
+
+import java.sql.Connection;
 
 public class DataManager {
 
 	@Getter
-	private final Database database;
+	private final String ip;
 
 	@Getter
-	private final UserManager userManager;
+	private final String port;
 
-	public DataManager(Database database){
+	private final String database;
+
+	private final String username;
+
+	private final String password;
+
+	private Connection connection;
+
+	public DataManager(String ip, String port, String database, String username, String password){
+		this.ip = ip;
+		this.port = port;
 		this.database = database;
-		this.userManager = new UserManager(database);
+		this.username = username;
+		this.password = password;
 	}
 
-	public synchronized boolean connect(){
-		return this.database.connect();
+	public Database getNewDatabase(){
+		return new SQLDatabase(ip, port, database, username, password);
 	}
 
-	public synchronized void disconnect(){
-		this.database.disconnect();
-	}
-
-	public void createTables(){
-		userManager.createTable();
+	public static void createTables(Database database){
+		UserManager.createTable(database);
 	}
 }

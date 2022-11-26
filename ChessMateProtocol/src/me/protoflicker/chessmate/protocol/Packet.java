@@ -1,5 +1,9 @@
 package me.protoflicker.chessmate.protocol;
 
-public interface Packet {
+import java.io.Serializable;
 
+public abstract class Packet implements Serializable {
+	public String getName(){
+		return this.getClass().getSimpleName();
+	}
 }

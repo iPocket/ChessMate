@@ -46,9 +46,16 @@ public final class Logger {
 		}
 	}
 
+	public static void initExceptionHandler(){
+		Thread.setDefaultUncaughtExceptionHandler(new ErrorHandler());
+	}
+
+	public static void initExceptionHandler(Runnable runnable){
+		Thread.setDefaultUncaughtExceptionHandler(new ErrorHandler(runnable));
+	}
 
 	private Logger() throws FileSystemException, FileNotFoundException {
-		Thread.setDefaultUncaughtExceptionHandler(new ErrorHandler());
+		initExceptionHandler();
 
 		File logDirectory = new File(Main.WORKING_DIRECTORY + File.separator + "logs");
 		if(!logDirectory.exists()){

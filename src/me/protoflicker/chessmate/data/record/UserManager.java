@@ -2,26 +2,40 @@ package me.protoflicker.chessmate.data.record;
 
 import me.protoflicker.chessmate.Server;
 import me.protoflicker.chessmate.data.Database;
-import me.protoflicker.chessmate.data.record.enums.GameSide;
-import me.protoflicker.chessmate.data.record.enums.Result;
 
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 
-public final class Participation {
+public abstract class UserManager {
 
-	public static String getParticipationIdByUserId(String participationId){
+	public static String getUserIdByUsername(String username){
 		String statement =
 				"""
-				SELECT participationId
+				SELECT userId
+				FROM `Users`
+				WHERE username = ?
+				LIMIT 1;
+				""";
+
+		try (PreparedStatement s = Server.getThreadDatabase().getConnection().prepareStatement(statement)){
+			s.setString(0, username);
+			ResultSet r = s.executeQuery();
+			return r.getString(0);
+		} catch (SQLException e){
+			throw new RuntimeException(e);
+		}
+	}
+
+	public static String getUsername(String userId){
+		String statement =
+				"""
+				SELECT username
 				FROM `Users`
 				WHERE userId = ?
 				LIMIT 1;
 				""";
 
 		try (PreparedStatement s = Server.getThreadDatabase().getConnection().prepareStatement(statement)){
-			s.setString(0, participationId);
+			s.setString(0, userId);
 			ResultSet r = s.executeQuery();
 			return r.getString(0);
 		} catch (SQLException e){
@@ -29,17 +43,17 @@ public final class Participation {
 		}
 	}
 
-	public static String getUserId(String participationId){
+	public static String getHashedPassword(String userId){
 		String statement =
 				"""
-				SELECT userId
-				FROM `Participations`
-				WHERE participationId = ?
+				SELECT hashedPassword
+				FROM `Users`
+				WHERE userId = ?
 				LIMIT 1;
 				""";
 
 		try (PreparedStatement s = Server.getThreadDatabase().getConnection().prepareStatement(statement)){
-			s.setString(0, participationId);
+			s.setString(0, userId);
 			ResultSet r = s.executeQuery();
 			return r.getString(0);
 		} catch (SQLException e){
@@ -47,70 +61,51 @@ public final class Participation {
 		}
 	}
 
-	public static String getGameId(String participationId){
+	public static Date getBirthday(String userId){
 		String statement =
 				"""
-				SELECT gameId
-				FROM `Participations`
-				WHERE participationId = ?
+				SELECT birthday
+				FROM `Users`
+				WHERE userId = ?
 				LIMIT 1;
 				""";
 
 		try (PreparedStatement s = Server.getThreadDatabase().getConnection().prepareStatement(statement)){
-			s.setString(0, participationId);
+			s.setString(0, userId);
 			ResultSet r = s.executeQuery();
-			return r.getString(0);
+			return r.getDate(0);
 		} catch (SQLException e){
 			throw new RuntimeException(e);
 		}
 	}
 
-	public static GameSide getGameSide(String participationId){
+	public static Timestamp getLastLogin(String userId){
 		String statement =
 				"""
-				SELECT gameSide
-				FROM `Participations`
-				WHERE participationId = ?
+				SELECT lastLogin
+				FROM `Users`
+				WHERE userId = ?
 				LIMIT 1;
 				""";
 
 		try (PreparedStatement s = Server.getThreadDatabase().getConnection().prepareStatement(statement)){
-			s.setString(0, participationId);
+			s.setString(0, userId);
 			ResultSet r = s.executeQuery();
-			return r.getByte(0) == 1 ? GameSide.WHITE : GameSide.BLACK;
+			return r.getTimestamp(0);
 		} catch (SQLException e){
 			throw new RuntimeException(e);
 		}
 	}
 
-	public static Result getResult(String participationId){
-		String statement =
-				"""
-				SELECT result
-				FROM `Participations`
-				WHERE participationId = ?
-				LIMIT 1;
-				""";
-
-		try (PreparedStatement s = Server.getThreadDatabase().getConnection().prepareStatement(statement)){
-			s.setString(0, participationId);
-			ResultSet r = s.executeQuery();
-			return r.getByte(0) == 1 ? Result.WIN : Result.LOSS;
-		} catch (SQLException e){
-			throw new RuntimeException(e);
-		}
-	}
-
-	//String participationId, String participationId, String gameId, GameSide gameSide, Result result
 	public static void createTable(Database database){
 		String statement =
 				"""
-				CREATE TABLE IF NOT EXISTS `Participations` (
-				participationId BINARY(16) DEFAULT (UNHEX(REPLACE(UUID(), "-",""))) NOT NULL UNIQUE PRIMARY KEY,
-				userId BINARY(16) NOT NULL,
-				gameId BINARY(16) NOT NULL,
-				gameSide BIT(1) NOT NULL,
-				result BIT(1) NOT NULL
+				CREATE TABLE IF NOT EXISTS `Users` (
+				userId BINARY(16) DEFAULT (UNHEX(REPLACE(UUID(), "-",""))) NOT NULL UNIQUE PRIMARY KEY,
+				username VARCHAR(20) NOT NULL,
+				hashedPassword BINARY(32) NOT NULL,
+				birthday DATE NOT NULL,
+				lastLogin TIMESTAMP NOT NULL
 				);
 				""";
 
@@ -121,4 +116,3 @@ public final class Participation {
 		}
 	}
 }
-

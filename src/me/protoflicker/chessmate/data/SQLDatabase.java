@@ -1,14 +1,14 @@
 package me.protoflicker.chessmate.data;
 
 import lombok.Getter;
-import me.protoflicker.chessmate.console.Logger;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
-public class SQLDatabase implements Database {
+//TODO connection pooling
+public final class SQLDatabase implements Database {
 
 	@Getter
 	private final String ip;
@@ -38,22 +38,17 @@ public class SQLDatabase implements Database {
 	}
 
 	@Override
-	public synchronized boolean connect(){
+	public synchronized void connect() throws SQLException {
 		if(!this.isConnected()){
 			try {
 				Class.forName("org.mariadb.jdbc.Driver");
 				this.connection = DriverManager.getConnection(
 						"jdbc:mariadb://" + this.ip + ":" + this.port + '/' + this.database +
 								"?allowMultiQueries=true&autoReconnect=true", this.username, this.password);
-				return true;
-			} catch (SQLException e){
-				Logger.getInstance().logStackTrace(e, Logger.LogLevel.WARNING);
-				return false;
-			} catch(ClassNotFoundException e){
+				return;
+			} catch (ClassNotFoundException e){
 				throw new RuntimeException(e);
 			}
-		} else {
-			return true;
 		}
 	}
 
@@ -62,8 +57,8 @@ public class SQLDatabase implements Database {
 		if(this.connection != null){
 			try {
 				this.connection.close();
-			} catch (Exception e){
-				Logger.getInstance().logStackTrace(e, Logger.LogLevel.WARNING);
+			} catch (SQLException ignored){
+
 			}
 		}
 	}
@@ -78,7 +73,7 @@ public class SQLDatabase implements Database {
 	}
 
 	@Override
-	public synchronized void refresh(){
+	public synchronized void refresh() throws SQLException {
 		try {
 			PreparedStatement s = this.connection.prepareStatement("SELECT 1");
 			s.executeQuery();
