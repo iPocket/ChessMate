@@ -5,6 +5,7 @@ import me.protoflicker.chessmate.Server;
 import me.protoflicker.chessmate.console.Logger;
 import me.protoflicker.chessmate.data.Database;
 import me.protoflicker.chessmate.protocol.Packet;
+import me.protoflicker.chessmate.protocol.packet.DisconnectPacket;
 import me.protoflicker.chessmate.protocol.packet.PingPacket;
 import me.protoflicker.chessmate.util.DataUtils;
 import me.protoflicker.chessmate.util.DatabaseThread;
@@ -14,6 +15,8 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.nio.channels.ClosedChannelException;
 import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.Map;
 
 public class ClientThread extends Thread implements DatabaseThread {
 
@@ -29,6 +32,12 @@ public class ClientThread extends Thread implements DatabaseThread {
 	@Getter
 	private final Database database;
 
+	@Getter
+	private boolean isOnCycle;
+
+	//This usage of Class<?> raises a lot of potential bugs with ClassLoaders...
+	private final Map<Class<?>, PacketHandler> packetHandlers = new HashMap<>();
+
 	public ClientThread(Socket socket){
 		super("C/" + socket.getInetAddress().getHostName() + ":" + socket.getPort());
 
@@ -42,7 +51,7 @@ public class ClientThread extends Thread implements DatabaseThread {
 
 	@Override
 	public void run(){
-		Logger.initExceptionHandler(this::close);
+		Logger.initExceptionHandler(this::tryClose);
 
 		Logger.getInstance().log("Accepting connection from " + getClientName(), Logger.LogLevel.NOTICE);
 		try {
@@ -53,7 +62,7 @@ public class ClientThread extends Thread implements DatabaseThread {
 		}
 
 		try {
-			socket.setSoTimeout(300000);
+			socket.setSoTimeout(30000/*0*/);
 			inputStream = socket.getInputStream();
 			outputStream = socket.getOutputStream();
 		} catch (Exception e){
@@ -62,27 +71,44 @@ public class ClientThread extends Thread implements DatabaseThread {
 
 		Logger.getInstance().log("Successfully connected " + getClientName(), Logger.LogLevel.NOTICE);
 
-		cycle();
+		packetHandlers.put(PingPacket.class, (c, p) -> {
+			PingPacket packet = (PingPacket) p;
+			Logger.getInstance().log("Ping Count: " + packet.getCount());
+			sendPacket(new PingPacket(packet.getCount()));
+			try {
+				database.refresh();
+			} catch(SQLException e){
+				throw new RuntimeException(e);
+			}
+		});
 
+		packetHandlers.put(DisconnectPacket.class, (c, p) -> {
+			DisconnectPacket packet = (DisconnectPacket) p;
+			Logger.getInstance().log("Received disconnect packet", Logger.LogLevel.NOTICE);
+			c.tryClose();
+		});
+
+
+		cycle();
 		close();
 	}
 
 	private void cycle(){
-		while(true){
+		isOnCycle = true;
+		while(!isInterrupted()){
 			try {
 				Object object = DataUtils.deserializeObjectFromStream(inputStream);
 				if(object instanceof Packet packet){
-					Logger.getInstance().log("Packet received: " + packet.getName()
-							+ ", " + packet.getClass().getName());
-					if(packet instanceof PingPacket pingPacket){
-						Logger.getInstance().log("Count: " + pingPacket.getCount());
-						sendPacket(new PingPacket(pingPacket.getCount()));
+					Logger.getInstance().log("Packet received: " + packet.getName());
+					PacketHandler handler = packetHandlers.get(packet.getClass());
+					if(handler != null){
+						handler.handle(this, packet);
 					}
 				} else {
 					Logger.getInstance().log("Received suspicious non-packet object", Logger.LogLevel.NOTICE);
 				}
 			} catch (ObjectStreamException e){
-//					Logger.getInstance().log("Received suspicious non-object bytes", Logger.LogLevel.NOTICE);
+//				Logger.getInstance().log("Received suspicious non-object bytes", Logger.LogLevel.NOTICE);
 				continue;
 			} catch (EOFException | ClosedChannelException | SocketException | InterruptedIOException e){
 				break;
@@ -94,15 +120,24 @@ public class ClientThread extends Thread implements DatabaseThread {
 				continue;
 			}
 		}
+		isOnCycle = false;
 	}
 
 	public synchronized void sendPacket(Packet packet){
 		if(outputStream != null){
 			try {
-				DataUtils.serializeObjectToStream(packet, outputStream);
+				DataUtils.serializeObjectToStream(packet, socket.getOutputStream());
 			} catch (IOException ignored){
 
 			}
+		}
+	}
+
+	public synchronized void tryClose(){
+		if(isOnCycle){
+			this.interrupt();
+		} else {
+			close();
 		}
 	}
 

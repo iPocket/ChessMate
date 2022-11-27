@@ -157,7 +157,7 @@ public class Server {
 
 		try {
 			for(ClientThread thread : clientThreads){
-				thread.interrupt();
+				thread.tryClose();
 			}
 
 //			while(!clientThreads.isEmpty()){
