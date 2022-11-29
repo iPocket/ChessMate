@@ -1,4 +1,4 @@
-package me.protoflicker.chessmate.protocol.packet;
+package me.protoflicker.chessmate.protocol.packet.connection;
 
 import me.protoflicker.chessmate.protocol.Packet;
 

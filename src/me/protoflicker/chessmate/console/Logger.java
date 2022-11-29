@@ -16,6 +16,7 @@ import java.time.format.DateTimeFormatter;
 public final class Logger {
 
 	public enum LogLevel {
+		DEBUG(ANSIFormat.GRAY),
 		INFO(ANSIFormat.WHITE),
 		NOTICE(ANSIFormat.LIGHT_BLUE),
 		WARNING(ANSIFormat.ORANGE),

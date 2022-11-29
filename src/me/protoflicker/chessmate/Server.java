@@ -14,6 +14,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
 import java.sql.SQLException;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -41,7 +42,9 @@ public class Server {
 	@Getter
 	private final Database database;
 
-	private final Set<ClientThread> clientThreads = new HashSet<>();
+
+
+	private final Set<ClientThread> clientThreads = Collections.synchronizedSet(new HashSet<>());
 
 
 	public static void init(JSONConfig config) throws InstanceAlreadyExistsException {
@@ -64,20 +67,21 @@ public class Server {
 		this.database = dataManager.getNewDatabase();
 	}
 
-	public synchronized void addClientThread(ClientThread e){
+	public void addClientThread(ClientThread e){
 		clientThreads.add(e);
 	}
 
-	public synchronized void removeClientThread(ClientThread e){
+	public void removeClientThread(ClientThread e){
 		clientThreads.remove(e);
 	}
 
 	public static Database getThreadDatabase(){
 		Thread thread = Thread.currentThread();
-		if(thread instanceof ClientThread){
-			return ((ClientThread) thread).getDatabase();
+		if(thread instanceof ClientThread clientThread){
+			return clientThread.getDatabase();
 		} else {
-			Logger.getInstance().log("Passing main thread connection to thread " + thread.getName(), Logger.LogLevel.ERROR);
+			Logger.getInstance().log("Passing main thread database connection to thread "
+					+ thread.getName(), Logger.LogLevel.ERROR);
 			return Server.getInstance().getDatabase();
 		}
 	}
@@ -87,7 +91,7 @@ public class Server {
 		try {
 			database.connect();
 			DataManager.createTables(database);
-		} catch(SQLException e){
+		} catch (SQLException e){
 			Logger.getInstance().log("Failed to connect to database on main thread:", Logger.LogLevel.FATAL);
 			throw new RuntimeException(e);
 		}
@@ -134,13 +138,12 @@ public class Server {
 			} catch (SocketException e){ //socket closed
 				break;
 			} catch (IOException e) {
-				Logger.getInstance().log("Error while accepting client: ", Logger.LogLevel.WARNING);
-				Logger.getInstance().logStackTrace(e, Logger.LogLevel.WARNING);
+				Logger.getInstance().log("Error while accepting client: ", Logger.LogLevel.ERROR);
+				Logger.getInstance().logStackTrace(e, Logger.LogLevel.ERROR);
 				continue;
 			}
 
 			ClientThread clientThread = new ClientThread(socket);
-			addClientThread(clientThread);
 			clientThread.start();
 		}
 
@@ -153,16 +156,17 @@ public class Server {
 	}
 
 	private synchronized void closeServer(){
-		Logger.getInstance().log("Shutting down server...");
+		Logger.getInstance().log("Shutting down server, may take 30 seconds...");
 
 		try {
 			for(ClientThread thread : clientThreads){
 				thread.tryClose();
 			}
 
-//			while(!clientThreads.isEmpty()){
-//				continue;
-//			}
+			//noinspection LoopConditionNotUpdatedInsideLoop
+			while(!clientThreads.isEmpty()){
+				continue;
+			}
 
 			Main.MAIN_THREAD.interrupt();
 		} catch (Exception ignored){

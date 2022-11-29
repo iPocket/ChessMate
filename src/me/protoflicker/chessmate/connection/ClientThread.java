@@ -2,23 +2,32 @@ package me.protoflicker.chessmate.connection;
 
 import lombok.Getter;
 import me.protoflicker.chessmate.Server;
+import me.protoflicker.chessmate.connection.handler.HeartbeatHandler;
 import me.protoflicker.chessmate.console.Logger;
 import me.protoflicker.chessmate.data.Database;
+import me.protoflicker.chessmate.data.DatabaseThread;
 import me.protoflicker.chessmate.protocol.Packet;
-import me.protoflicker.chessmate.protocol.packet.DisconnectPacket;
-import me.protoflicker.chessmate.protocol.packet.PingPacket;
+import me.protoflicker.chessmate.protocol.packet.connection.ConnectPacket;
+import me.protoflicker.chessmate.protocol.packet.connection.DisconnectPacket;
+import me.protoflicker.chessmate.protocol.packet.connection.PingPacket;
+import me.protoflicker.chessmate.protocol.packet.connection.PongPacket;
 import me.protoflicker.chessmate.util.DataUtils;
-import me.protoflicker.chessmate.util.DatabaseThread;
 
 import java.io.*;
 import java.net.Socket;
 import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.nio.channels.ClosedChannelException;
 import java.sql.SQLException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
 public class ClientThread extends Thread implements DatabaseThread {
+
+	@Getter
+	private final Database database;
+
 
 	@Getter
 	private final Socket socket;
@@ -30,13 +39,24 @@ public class ClientThread extends Thread implements DatabaseThread {
 	private OutputStream outputStream;
 
 	@Getter
-	private final Database database;
-
-	@Getter
 	private boolean isOnCycle;
 
+	@Getter
+	private boolean isFullyConnected = false;
+
+
+
+	//last time a packet was received
+	@Getter
+	private long lastReceived = System.currentTimeMillis();
+
+	@Getter
+	private PingPacket lastPing = new PingPacket(System.currentTimeMillis());
+
+
+
 	//This usage of Class<?> raises a lot of potential bugs with ClassLoaders...
-	private final Map<Class<?>, PacketHandler> packetHandlers = new HashMap<>();
+	private final Map<Class<?>, PacketHandler> packetHandlers = Collections.synchronizedMap(new HashMap<>());
 
 	public ClientThread(Socket socket){
 		super("C/" + socket.getInetAddress().getHostName() + ":" + socket.getPort());
@@ -53,39 +73,31 @@ public class ClientThread extends Thread implements DatabaseThread {
 	public void run(){
 		Logger.initExceptionHandler(this::tryClose);
 
-		Logger.getInstance().log("Accepting connection from " + getClientName(), Logger.LogLevel.NOTICE);
-		try {
-			database.connect();
-		} catch (SQLException e){
-			Logger.getInstance().log("Failed to connect to database for client:", Logger.LogLevel.FATAL);
-			throw new RuntimeException(e);
-		}
+		Server.getInstance().addClientThread(this);
+
+		Logger.getInstance().log("Accepting connection from " + getClientName(),
+				Logger.LogLevel.NOTICE);
 
 		try {
-			socket.setSoTimeout(30000/*0*/);
+			socket.setSoTimeout(30000); //30sec
 			inputStream = socket.getInputStream();
 			outputStream = socket.getOutputStream();
 		} catch (Exception e){
 			throw new RuntimeException(e);
 		}
 
-		Logger.getInstance().log("Successfully connected " + getClientName(), Logger.LogLevel.NOTICE);
 
-		packetHandlers.put(PingPacket.class, (c, p) -> {
-			PingPacket packet = (PingPacket) p;
-			Logger.getInstance().log("Ping Count: " + packet.getCount());
-			sendPacket(new PingPacket(packet.getCount()));
-			try {
-				database.refresh();
-			} catch(SQLException e){
-				throw new RuntimeException(e);
+		packetHandlers.put(ConnectPacket.class, (c, p) -> {
+			if(connectToDatabase()){
+				Logger.getInstance().log("Successfully accepted connection from " + getClientName());
+
+				initBaseHandlers();
+
+				isFullyConnected = true;
+				packetHandlers.remove(ConnectPacket.class);
+			} else {
+				tryClose();
 			}
-		});
-
-		packetHandlers.put(DisconnectPacket.class, (c, p) -> {
-			DisconnectPacket packet = (DisconnectPacket) p;
-			Logger.getInstance().log("Received disconnect packet", Logger.LogLevel.NOTICE);
-			c.tryClose();
 		});
 
 
@@ -93,22 +105,49 @@ public class ClientThread extends Thread implements DatabaseThread {
 		close();
 	}
 
+	private boolean connectToDatabase(){
+		try {
+			database.connect();
+		} catch (SQLException e){
+			Logger.getInstance().log("Failed to connect to database for client:", Logger.LogLevel.ERROR);
+			Logger.getInstance().logStackTrace(e, Logger.LogLevel.ERROR);
+			return false;
+		}
+
+		return true;
+	}
+
+	private void initBaseHandlers(){
+		packetHandlers.put(PingPacket.class, HeartbeatHandler::handlePing);
+		packetHandlers.put(PongPacket.class, HeartbeatHandler::handlePong);
+
+		packetHandlers.put(DisconnectPacket.class, HeartbeatHandler::handleDisconnect);
+	}
+
 	private void cycle(){
 		isOnCycle = true;
-		while(!isInterrupted()){
+		while(!isInterrupted() && (System.currentTimeMillis() - lastReceived) <= 60000){
 			try {
 				Object object = DataUtils.deserializeObjectFromStream(inputStream);
 				if(object instanceof Packet packet){
-					Logger.getInstance().log("Packet received: " + packet.getName());
+					lastReceived = System.currentTimeMillis();
 					PacketHandler handler = packetHandlers.get(packet.getClass());
 					if(handler != null){
+						Logger.getInstance().log("Packet received: " + packet.getName(), Logger.LogLevel.DEBUG);
 						handler.handle(this, packet);
+					} else {
+						Logger.getInstance().log("Received unhandled packet " + packet.getName(),
+								Logger.LogLevel.DEBUG);
 					}
 				} else {
 					Logger.getInstance().log("Received suspicious non-packet object", Logger.LogLevel.NOTICE);
 				}
 			} catch (ObjectStreamException e){
 //				Logger.getInstance().log("Received suspicious non-object bytes", Logger.LogLevel.NOTICE);
+				continue;
+			} catch (SocketTimeoutException e){
+				lastPing = new PingPacket(System.currentTimeMillis());
+				sendPacket(lastPing);
 				continue;
 			} catch (EOFException | ClosedChannelException | SocketException | InterruptedIOException e){
 				break;
@@ -135,7 +174,7 @@ public class ClientThread extends Thread implements DatabaseThread {
 
 	public synchronized void tryClose(){
 		if(isOnCycle){
-			this.interrupt();
+			interrupt();
 		} else {
 			close();
 		}
