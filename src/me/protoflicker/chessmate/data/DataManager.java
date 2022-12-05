@@ -1,6 +1,7 @@
 package me.protoflicker.chessmate.data;
 
 import lombok.Getter;
+import me.protoflicker.chessmate.data.record.ParticipationManager;
 import me.protoflicker.chessmate.data.record.UserManager;
 
 import java.sql.Connection;
@@ -35,5 +36,6 @@ public class DataManager {
 
 	public static void createTables(Database database){
 		UserManager.createTable(database);
+		ParticipationManager.createTable(database);
 	}
 }

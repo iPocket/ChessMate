@@ -9,7 +9,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-public final class Participation {
+public final class ParticipationManager {
 
 	public static String getParticipationIdByUserId(String participationId){
 		String statement =

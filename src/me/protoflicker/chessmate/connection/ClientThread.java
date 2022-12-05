@@ -5,7 +5,7 @@ import me.protoflicker.chessmate.Server;
 import me.protoflicker.chessmate.connection.handler.HeartbeatHandler;
 import me.protoflicker.chessmate.console.Logger;
 import me.protoflicker.chessmate.data.Database;
-import me.protoflicker.chessmate.data.DatabaseThread;
+import me.protoflicker.chessmate.data.DatabaseContainer;
 import me.protoflicker.chessmate.protocol.Packet;
 import me.protoflicker.chessmate.protocol.packet.connection.ConnectPacket;
 import me.protoflicker.chessmate.protocol.packet.connection.DisconnectPacket;
@@ -23,7 +23,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-public class ClientThread extends Thread implements DatabaseThread {
+public class ClientThread extends Thread implements DatabaseContainer {
 
 	@Getter
 	private final Database database;
@@ -42,7 +42,7 @@ public class ClientThread extends Thread implements DatabaseThread {
 	private boolean isOnCycle;
 
 	@Getter
-	private boolean isFullyConnected = false;
+	private boolean isProtocolCompliant = false;
 
 
 
@@ -58,15 +58,21 @@ public class ClientThread extends Thread implements DatabaseThread {
 	//This usage of Class<?> raises a lot of potential bugs with ClassLoaders...
 	private final Map<Class<?>, PacketHandler> packetHandlers = Collections.synchronizedMap(new HashMap<>());
 
+
+	public static String getClientName(Socket socket){
+		return socket.getInetAddress().getHostName() + ":" + socket.getPort();
+	}
+
+
 	public ClientThread(Socket socket){
-		super("C/" + socket.getInetAddress().getHostName() + ":" + socket.getPort());
+		super("C/" + getClientName(socket));
 
 		this.socket = socket;
 		this.database = Server.getInstance().getDataManager().getNewDatabase();
 	}
 
 	public String getClientName(){
-		return socket.getInetAddress().getHostName() + ":" + socket.getPort();
+		return getClientName(this.socket);
 	}
 
 	@Override
@@ -93,7 +99,7 @@ public class ClientThread extends Thread implements DatabaseThread {
 
 				initBaseHandlers();
 
-				isFullyConnected = true;
+				isProtocolCompliant = true;
 				packetHandlers.remove(ConnectPacket.class);
 			} else {
 				tryClose();
@@ -146,8 +152,10 @@ public class ClientThread extends Thread implements DatabaseThread {
 //				Logger.getInstance().log("Received suspicious non-object bytes", Logger.LogLevel.NOTICE);
 				continue;
 			} catch (SocketTimeoutException e){
-				lastPing = new PingPacket(System.currentTimeMillis());
-				sendPacket(lastPing);
+				if(isProtocolCompliant){
+					lastPing = new PingPacket(System.currentTimeMillis());
+					sendPacket(lastPing);
+				}
 				continue;
 			} catch (EOFException | ClosedChannelException | SocketException | InterruptedIOException e){
 				break;
@@ -172,7 +180,7 @@ public class ClientThread extends Thread implements DatabaseThread {
 		}
 	}
 
-	public synchronized void tryClose(){
+	public void tryClose(){
 		if(isOnCycle){
 			interrupt();
 		} else {
@@ -180,7 +188,7 @@ public class ClientThread extends Thread implements DatabaseThread {
 		}
 	}
 
-	public synchronized void close(){
+	public void close(){
 		Server.getInstance().removeClientThread(this);
 
 		Logger.getInstance().log("Disconnecting " + getClientName(), Logger.LogLevel.NOTICE);

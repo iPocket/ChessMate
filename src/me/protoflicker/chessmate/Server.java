@@ -6,6 +6,7 @@ import me.protoflicker.chessmate.connection.ClientThread;
 import me.protoflicker.chessmate.console.Logger;
 import me.protoflicker.chessmate.data.DataManager;
 import me.protoflicker.chessmate.data.Database;
+import me.protoflicker.chessmate.data.DatabaseContainer;
 import me.protoflicker.chessmate.util.JSONConfig;
 
 import javax.management.InstanceAlreadyExistsException;
@@ -23,7 +24,7 @@ public class Server {
 
 	@Getter
 	private static Server instance = null;
-	//
+
 
 
 	private final static int DEFAULT_PORT = 13372;
@@ -32,7 +33,7 @@ public class Server {
 
 
 
-	//
+
 	@Getter
 	private final JSONConfig config;
 
@@ -77,8 +78,8 @@ public class Server {
 
 	public static Database getThreadDatabase(){
 		Thread thread = Thread.currentThread();
-		if(thread instanceof ClientThread clientThread){
-			return clientThread.getDatabase();
+		if(thread instanceof DatabaseContainer container){
+			return container.getDatabase();
 		} else {
 			Logger.getInstance().log("Passing main thread database connection to thread "
 					+ thread.getName(), Logger.LogLevel.ERROR);
@@ -86,7 +87,7 @@ public class Server {
 		}
 	}
 
-	public void cycle(){
+	public void start(){
 		Logger.getInstance().log("Connecting to database on main thread...");
 		try {
 			database.connect();
@@ -131,6 +132,10 @@ public class Server {
 		Logger.getInstance().log("Server is now running on " + serverSocket.getInetAddress().getHostName() + ":" +
 				serverSocket.getLocalPort());
 
+		cycle();
+	}
+
+	private void cycle(){
 		Socket socket = null;
 		while(true){
 			try {
