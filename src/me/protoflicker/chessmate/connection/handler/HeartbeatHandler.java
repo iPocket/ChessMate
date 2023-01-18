@@ -15,8 +15,4 @@ public abstract class HeartbeatHandler {
 	public static void handlePong(ClientThread client, Packet packet){
 		client.sendPacket(new PingPacket(System.currentTimeMillis()));
 	}
-
-	public static void handleDisconnect(ClientThread client, Packet packet){
-		client.tryClose();
-	}
 }

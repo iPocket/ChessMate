@@ -2,6 +2,7 @@ package me.protoflicker.chessmate.console;
 
 
 import lombok.Getter;
+import lombok.Setter;
 import me.protoflicker.chessmate.Main;
 import me.protoflicker.chessmate.util.ANSIFormat;
 
@@ -16,21 +17,22 @@ import java.time.format.DateTimeFormatter;
 public final class Logger {
 
 	public enum LogLevel {
-		DEBUG(ANSIFormat.GRAY),
-		INFO(ANSIFormat.WHITE),
-		NOTICE(ANSIFormat.LIGHT_BLUE),
-		WARNING(ANSIFormat.ORANGE),
-		ERROR(ANSIFormat.RED),
-		FATAL( ANSIFormat.RED + ANSIFormat.REVERSE);
+		DEBUG(ANSIFormat.GRAY, System.out),
+		INFO(ANSIFormat.WHITE, System.out),
+		NOTICE(ANSIFormat.LIGHT_BLUE, System.out),
+		WARNING(ANSIFormat.ORANGE, System.out),
+		ERROR(ANSIFormat.RED, System.err),
+		FATAL( ANSIFormat.RED + ANSIFormat.REVERSE, System.err);
 
+		@Getter
 		private final String color;
 
-		LogLevel(String color){
-			this.color = color;
-		}
+		@Getter
+		private final PrintStream stream;
 
-		public String getColor(){
-			return this.color;
+		LogLevel(String color, PrintStream stream){
+			this.color = color;
+			this.stream = stream;
 		}
 	}
 
@@ -38,6 +40,10 @@ public final class Logger {
 	private static Logger instance = null;
 
 	private final PrintStream logStream;
+
+	@Getter
+	@Setter
+	private boolean isDebug = true;
 
 	public static void init() throws Exception {
 		if(Logger.instance == null){
@@ -66,9 +72,12 @@ public final class Logger {
 		}
 
 		LocalDateTime now = LocalDateTime.now();
-		String logFile = logDirectory + File.separator + now.format(DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm-ss"));
+		String logFile = logDirectory + File.separator
+				+ now.format(DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm-ss")) + ".log";
 
-		this.logStream = new PrintStream(logFile + ".log");
+		this.logStream = new PrintStream(logFile);
+
+		log("Logging to file " + logFile.toString());
 	}
 
 	public void log(String text){
@@ -76,12 +85,14 @@ public final class Logger {
 	}
 
 	public void log(String text, LogLevel level){
-		LocalDateTime now = LocalDateTime.now();
-		String output = "[" + now.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) + "] "
-				+ ANSIFormat.AQUA + "[" + Thread.currentThread().getName() + ANSIFormat.WHITE + "/" + level.getColor()
-				+ level + ANSIFormat.RESET + "] " + text;
-		System.out.println(output + ANSIFormat.RESET);
-		this.logStream.println(ANSIFormat.strip(output));
+		if(isDebug || level != LogLevel.DEBUG){
+			LocalDateTime now = LocalDateTime.now();
+			String output = "[" + now.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) + "] "
+					+ ANSIFormat.AQUA + "[" + Thread.currentThread().getName() + ANSIFormat.WHITE + "/"
+					+ level.getColor() + level + ANSIFormat.RESET + "] " + text;
+			level.getStream().println(output + ANSIFormat.RESET);
+			this.logStream.println(ANSIFormat.strip(output));
+		}
 	}
 
 	public void logStackTrace(Throwable e, LogLevel level){

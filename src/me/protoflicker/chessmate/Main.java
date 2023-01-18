@@ -59,7 +59,7 @@ public class Main {
 		return config;
 	}
 
-	private static void createConfigFile(File configFile) throws FileSystemException{
+	private static void createConfigFile(File configFile) throws FileSystemException {
 		File configFolderFile = new File(CONFIG_FOLDER);
 		if(!configFolderFile.exists()){
 			if(!configFolderFile.mkdir()){

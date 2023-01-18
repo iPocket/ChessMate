@@ -10,5 +10,9 @@
 		"database": "chess",
 		"username": "admin",
 		"password": "some_pass"
+	},
+
+	"console": {
+		"debug": true
 	}
 }

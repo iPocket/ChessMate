@@ -22,12 +22,17 @@ import java.util.Set;
 public class Server {
 
 
+	public static final int BACKLOG_SIZE = 50;
+
+	private final static int DEFAULT_PORT = 13372;
+
+
 	@Getter
 	private static Server instance = null;
 
 
 
-	private final static int DEFAULT_PORT = 13372;
+
 
 	private ServerSocket serverSocket;
 
@@ -89,38 +94,15 @@ public class Server {
 
 	public void start(){
 		Logger.getInstance().log("Connecting to database on main thread...");
-		try {
-			database.connect();
-			DataManager.createTables(database);
-		} catch (SQLException e){
-			Logger.getInstance().log("Failed to connect to database on main thread:", Logger.LogLevel.FATAL);
-			throw new RuntimeException(e);
-		}
+		initDatabase();
 
 		Logger.getInstance().log("Starting server...");
 
 
-
-		Object ipPointer = config.getByPointer("server.ip");
-		String ip;
-		if(ipPointer != null){
-			ip = (String) ipPointer;
-		} else {
-			throw new RuntimeException("Error while fetching server ip from config.");
-		}
-
-		Object portPointer = config.getByPointer("server.port");
-		long port;
-		if(portPointer != null){
-			port = (long) portPointer;
-		} else {
-			throw new RuntimeException("Error while fetching server port from config.");
-		}
-
-
-
+		String ip = fetchIp();
+		long port = fetchPort();
 		try {
-			this.serverSocket = new ServerSocket((int) port, 50, InetAddresses.forString(ip));
+			this.serverSocket = new ServerSocket((int) port, BACKLOG_SIZE, InetAddresses.forString(ip));
 		} catch (IOException e) {
 			Logger.getInstance().log("Error while binding to server port: ", Logger.LogLevel.FATAL);
 			throw new RuntimeException(e);
@@ -135,13 +117,45 @@ public class Server {
 		cycle();
 	}
 
+	private void initDatabase(){
+		try {
+			database.connect();
+			DataManager.createTables(database);
+		} catch (SQLException e){
+			Logger.getInstance().log("Failed to connect to database on main thread:", Logger.LogLevel.FATAL);
+			throw new RuntimeException(e);
+		}
+	}
+
+	private String fetchIp(){
+		Object ipPointer = config.getByPointer("server.ip");
+		String ip;
+		if(ipPointer != null){
+			ip = (String) ipPointer;
+		} else {
+			throw new RuntimeException("Error while fetching server ip from config.");
+		}
+		return ip;
+	}
+
+	private long fetchPort(){
+		Object portPointer = config.getByPointer("server.port");
+		long port;
+		if(portPointer != null){
+			port = (long) portPointer;
+		} else {
+			throw new RuntimeException("Error while fetching server port from config.");
+		}
+		return port;
+	}
+
 	private void cycle(){
 		Socket socket = null;
 		while(true){
 			try {
 				socket = serverSocket.accept();
-			} catch (SocketException e){ //socket closed
-				break;
+			} catch (SocketException e){
+				break; //socket closed
 			} catch (IOException e) {
 				Logger.getInstance().log("Error while accepting client: ", Logger.LogLevel.ERROR);
 				Logger.getInstance().logStackTrace(e, Logger.LogLevel.ERROR);

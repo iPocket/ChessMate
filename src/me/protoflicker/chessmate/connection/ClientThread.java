@@ -28,7 +28,6 @@ public class ClientThread extends Thread implements DatabaseContainer {
 	@Getter
 	private final Database database;
 
-
 	@Getter
 	private final Socket socket;
 
@@ -55,7 +54,7 @@ public class ClientThread extends Thread implements DatabaseContainer {
 
 
 
-	//This usage of Class<?> raises a lot of potential bugs with ClassLoaders...
+	//This usage of Class<?> could raise a lot of potential bugs with ClassLoaders...
 	private final Map<Class<?>, PacketHandler> packetHandlers = Collections.synchronizedMap(new HashMap<>());
 
 
@@ -127,7 +126,9 @@ public class ClientThread extends Thread implements DatabaseContainer {
 		packetHandlers.put(PingPacket.class, HeartbeatHandler::handlePing);
 		packetHandlers.put(PongPacket.class, HeartbeatHandler::handlePong);
 
-		packetHandlers.put(DisconnectPacket.class, HeartbeatHandler::handleDisconnect);
+		packetHandlers.put(DisconnectPacket.class, (c, p) -> {
+			c.tryClose();
+		});
 	}
 
 	private void cycle(){
@@ -142,7 +143,7 @@ public class ClientThread extends Thread implements DatabaseContainer {
 						Logger.getInstance().log("Packet received: " + packet.getName(), Logger.LogLevel.DEBUG);
 						handler.handle(this, packet);
 					} else {
-						Logger.getInstance().log("Received unhandled packet " + packet.getName(),
+						Logger.getInstance().log("Received unhandled packet: " + packet.getName(),
 								Logger.LogLevel.DEBUG);
 					}
 				} else {
@@ -158,7 +159,7 @@ public class ClientThread extends Thread implements DatabaseContainer {
 				}
 				continue;
 			} catch (EOFException | ClosedChannelException | SocketException | InterruptedIOException e){
-				break;
+				break; //connection closed, socket closed, or interruption
 			} catch (IOException e){
 				Logger.getInstance().logStackTrace(e, Logger.LogLevel.WARNING);
 				continue;
@@ -170,12 +171,14 @@ public class ClientThread extends Thread implements DatabaseContainer {
 		isOnCycle = false;
 	}
 
+
 	public synchronized void sendPacket(Packet packet){
 		if(outputStream != null){
 			try {
+//				System.out.println(new Gson().toJson(packet));
 				DataUtils.serializeObjectToStream(packet, socket.getOutputStream());
 			} catch (IOException ignored){
-
+				//display warning?
 			}
 		}
 	}
