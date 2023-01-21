@@ -33,4 +33,4 @@ bin/
 /.idea/
 /logs/
 /config/
-ChessMate.iml
+*.iml
