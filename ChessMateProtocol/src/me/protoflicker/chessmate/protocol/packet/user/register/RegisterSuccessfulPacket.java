@@ -6,12 +6,12 @@ import me.protoflicker.chessmate.protocol.Packet;
 public class RegisterSuccessfulPacket extends Packet {
 
 	@Getter
-	private final String userId;
+	private final byte[] userId;
 
 	@Getter
 	private final String username;
 
-	public RegisterSuccessfulPacket(String userId, String username){
+	public RegisterSuccessfulPacket(byte[] userId, String username){
 		this.userId = userId;
 		this.username = username;
 	}

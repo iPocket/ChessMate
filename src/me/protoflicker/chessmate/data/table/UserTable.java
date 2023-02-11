@@ -1,13 +1,14 @@
-package me.protoflicker.chessmate.data.record;
+package me.protoflicker.chessmate.data.table;
 
 import me.protoflicker.chessmate.Server;
 import me.protoflicker.chessmate.data.Database;
+import me.protoflicker.chessmate.protocol.enums.AccountType;
 
 import java.sql.*;
 
-public abstract class UserManager {
+public abstract class UserTable {
 
-	public static String getUserIdByUsername(String username){
+	public static byte[] getUserIdByUsername(String username){
 		String statement =
 				"""
 				SELECT userId
@@ -17,15 +18,19 @@ public abstract class UserManager {
 				""";
 
 		try (PreparedStatement s = Server.getThreadDatabase().getConnection().prepareStatement(statement)){
-			s.setString(0, username);
+			s.setString(1, username);
 			ResultSet r = s.executeQuery();
-			return r.getString(0);
+			if(r.next()){
+				return r.getBytes(1);
+			} else {
+				return null;
+			}
 		} catch (SQLException e){
 			throw new RuntimeException(e);
 		}
 	}
 
-	public static String getUsername(String userId){
+	public static String getUsername(byte[] userId){
 		String statement =
 				"""
 				SELECT username
@@ -35,33 +40,63 @@ public abstract class UserManager {
 				""";
 
 		try (PreparedStatement s = Server.getThreadDatabase().getConnection().prepareStatement(statement)){
-			s.setString(0, userId);
+			s.setBytes(1, userId);
 			ResultSet r = s.executeQuery();
-			return r.getString(0);
+			if(r.next()){
+				return r.getString(1);
+			} else {
+				return null;
+			}
 		} catch (SQLException e){
 			throw new RuntimeException(e);
 		}
 	}
 
-	public static String getHashedPassword(String userId){
+	public static String getHashedPassword(byte[] userId){
 		String statement =
 				"""
-				SELECT hashedPassword
+				SELECT password
 				FROM `Users`
 				WHERE userId = ?
 				LIMIT 1;
 				""";
 
 		try (PreparedStatement s = Server.getThreadDatabase().getConnection().prepareStatement(statement)){
-			s.setString(0, userId);
+			s.setBytes(1, userId);
 			ResultSet r = s.executeQuery();
-			return r.getString(0);
+			if(r.next()){
+				return r.getString(1);
+			} else {
+				return null;
+			}
 		} catch (SQLException e){
 			throw new RuntimeException(e);
 		}
 	}
 
-	public static Date getBirthday(String userId){
+	public static AccountType getAccountType(byte[] userId){
+		String statement =
+				"""
+				SELECT accountType
+				FROM `Users`
+				WHERE userId = ?
+				LIMIT 1;
+				""";
+
+		try (PreparedStatement s = Server.getThreadDatabase().getConnection().prepareStatement(statement)){
+			s.setBytes(1, userId);
+			ResultSet r = s.executeQuery();
+			if(r.next()){
+				return AccountType.getByCode(r.getInt(1));
+			} else {
+				return null;
+			}
+		} catch (SQLException e){
+			throw new RuntimeException(e);
+		}
+	}
+
+	public static Date getBirthday(byte[] userId){
 		String statement =
 				"""
 				SELECT birthday
@@ -71,15 +106,19 @@ public abstract class UserManager {
 				""";
 
 		try (PreparedStatement s = Server.getThreadDatabase().getConnection().prepareStatement(statement)){
-			s.setString(0, userId);
+			s.setBytes(1, userId);
 			ResultSet r = s.executeQuery();
-			return r.getDate(0);
+			if(r.next()){
+				return r.getDate(1);
+			} else {
+				return null;
+			}
 		} catch (SQLException e){
 			throw new RuntimeException(e);
 		}
 	}
 
-	public static Timestamp getLastLogin(String userId){
+	public static Timestamp getLastLogin(byte[] userId){
 		String statement =
 				"""
 				SELECT lastLogin
@@ -89,9 +128,13 @@ public abstract class UserManager {
 				""";
 
 		try (PreparedStatement s = Server.getThreadDatabase().getConnection().prepareStatement(statement)){
-			s.setString(0, userId);
+			s.setBytes(1, userId);
 			ResultSet r = s.executeQuery();
-			return r.getTimestamp(0);
+			if(r.next()){
+				return r.getTimestamp(1);
+			} else {
+				return null;
+			}
 		} catch (SQLException e){
 			throw new RuntimeException(e);
 		}
@@ -101,11 +144,13 @@ public abstract class UserManager {
 		String statement =
 				"""
 				CREATE TABLE IF NOT EXISTS `Users` (
-				userId BINARY(16) DEFAULT (UNHEX(REPLACE(UUID(), "-",""))) NOT NULL UNIQUE PRIMARY KEY,
+				userId BINARY(16) DEFAULT (UNHEX(REPLACE(UUID(), "-",""))) NOT NULL UNIQUE,
 				username VARCHAR(20) NOT NULL,
-				hashedPassword BINARY(32) NOT NULL,
+				password BINARY(32) NOT NULL,
+				accountType TINYINT(1) UNSIGNED DEFAULT 0 NOT NULL,
 				birthday DATE NOT NULL,
-				lastLogin TIMESTAMP NOT NULL
+				lastLogin TIMESTAMP DEFAULT (NOW()) NOT NULL,
+				PRIMARY KEY (userId)
 				);
 				""";
 

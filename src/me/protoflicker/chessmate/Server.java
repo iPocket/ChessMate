@@ -86,8 +86,11 @@ public class Server {
 		if(thread instanceof DatabaseContainer container){
 			return container.getDatabase();
 		} else {
-			Logger.getInstance().log("Passing main thread database connection to thread "
-					+ thread.getName(), Logger.LogLevel.ERROR);
+			if(!thread.equals(Main.MAIN_THREAD)){
+				Logger.getInstance().log("Passing main thread database connection to thread "
+						+ thread.getName(), Logger.LogLevel.ERROR);
+			}
+
 			return Server.getInstance().getDatabase();
 		}
 	}
