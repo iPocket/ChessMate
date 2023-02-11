@@ -33,3 +33,5 @@ bin/
 /.idea/
 /logs/
 /config/
+ChessMate.iml
+ChessMateProtocol/ChessMateProtocol.iml
