@@ -87,11 +87,13 @@ public final class Logger {
 	public void log(String text, LogLevel level){
 		if(isDebug || level != LogLevel.DEBUG){
 			LocalDateTime now = LocalDateTime.now();
-			String output = "[" + now.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) + "] "
+			String header = "[" + now.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) + "] "
 					+ ANSIFormat.AQUA + "[" + Thread.currentThread().getName() + ANSIFormat.WHITE + "/"
-					+ level.getColor() + level + ANSIFormat.RESET + "] " + text;
-			level.getStream().println(output + ANSIFormat.RESET);
-			this.logStream.println(ANSIFormat.strip(output));
+					+ level.getColor() + level + ANSIFormat.RESET + "] ";
+			for(String line : text.split("\n")){
+				level.getStream().println(header + line + ANSIFormat.RESET);
+				this.logStream.println(ANSIFormat.strip(header + line));
+			}
 		}
 	}
 

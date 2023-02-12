@@ -4,9 +4,10 @@ import lombok.Getter;
 import me.protoflicker.chessmate.protocol.enums.GameSide;
 import me.protoflicker.chessmate.protocol.enums.PieceType;
 
+import java.io.Serializable;
 import java.util.Objects;
 
-public class LocatableChessPiece {
+public class LocatableChessPiece implements Serializable {
 
 	@Getter
 	private final ChessPiece piece;

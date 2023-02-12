@@ -80,24 +80,25 @@ public final class MovesTable {
 		}
 	}
 
-	public static void addMove(byte[] gameId, PerformedChessMove move){
+	public static void addMove(byte[] gameId, PerformedChessMove move, int moveNumber){
 		String statement =
 				"""
-				INSERT INTO `Moves` (gameId,timePlayed,moveType,pieceFrom,pieceTo,pieceMoved,promotionPiece)
-				VALUES (?, ?, ?, ?, ?, ?, ?);
+				INSERT INTO `Moves` (gameId,moveNumber,timePlayed,moveType,pieceFrom,pieceTo,pieceMoved,promotionPiece)
+				VALUES (?, ?, ?, ?, ?, ?, ?, ?);
 				""";
 
 		try (PreparedStatement s = Server.getThreadDatabase().getConnection().prepareStatement(statement)){
 			s.setBytes(1, gameId);
-			s.setTimestamp(2, move.getTimePlayed());
-			s.setInt(3, move.getMove().getMoveType().getCode());
-			s.setString(4, move.getMove().getPieceFrom().getChessNotation());
-			s.setString(5, move.getMove().getPieceTo().getChessNotation());
-			s.setString(6, move.getMove().getPieceMoved().getCode());
+			s.setInt(2, moveNumber);
+			s.setTimestamp(3, move.getTimePlayed());
+			s.setInt(4, move.getMove().getMoveType().getCode());
+			s.setString(5, move.getMove().getPieceFrom().getChessNotation());
+			s.setString(6, move.getMove().getPieceTo().getChessNotation());
+			s.setString(7, move.getMove().getPieceMoved().getCode());
 			if(move.getMove().getPromotionPiece() != null){
-				s.setString(7, move.getMove().getPromotionPiece().getCode());
+				s.setString(8, move.getMove().getPromotionPiece().getCode());
 			} else {
-				s.setNull(7, Types.CHAR);
+				s.setNull(8, Types.CHAR);
 			}
 			s.executeUpdate();
 		} catch (SQLException e){
@@ -108,7 +109,6 @@ public final class MovesTable {
 	private static PerformedChessMove toPerformedChessMove(int moveNumber, Timestamp timePlayed, String pieceMoved, int moveType, String pieceFrom,
 														   String pieceTo, String promotionPiece){
 		return new PerformedChessMove(
-				moveNumber,
 				timePlayed,
 				new ChessMove(
 					MoveType.getByCode(moveType),
@@ -121,12 +121,14 @@ public final class MovesTable {
 			);
 	}
 
+	//todo fix incrementer
+	//moveNumber SMALLINT(16) UNSIGNED AUTO_INCREMENT NOT NULL,
 	public static void createTable(Database database){
 		String statement =
 				"""
 				CREATE TABLE IF NOT EXISTS `Moves` (
 				gameId BINARY(16) NOT NULL,
-				moveNumber SMALLINT(16) UNSIGNED AUTO_INCREMENT NOT NULL,
+				moveNumber SMALLINT(16) UNSIGNED NOT NULL,
 				timePlayed TIMESTAMP DEFAULT (NOW()) NOT NULL,
 				moveType TINYINT(1) UNSIGNED NOT NULL,
 				pieceFrom CHAR(2),
@@ -134,8 +136,7 @@ public final class MovesTable {
 				pieceMoved CHAR(1),
 				promotionPiece CHAR(1),
 				PRIMARY KEY (gameId, moveNumber),
-				FOREIGN KEY (gameId) REFERENCES Games(gameId),
-				KEY (moveNumber)
+				FOREIGN KEY (gameId) REFERENCES Games(gameId)
 				);
 				""";
 

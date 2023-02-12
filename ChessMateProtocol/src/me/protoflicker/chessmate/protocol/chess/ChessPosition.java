@@ -5,7 +5,7 @@ import lombok.Getter;
 import java.io.Serializable;
 import java.util.Objects;
 
-public final class ChessPosition implements Serializable {
+public final class ChessPosition implements Serializable, Cloneable {
 
 	@Getter
 	private final int rank;
@@ -58,5 +58,14 @@ public final class ChessPosition implements Serializable {
 	@Override
 	public String toString(){
 		return this.getChessNotation();
+	}
+
+	@Override
+	public ChessPosition clone(){
+		try {
+			return (ChessPosition) super.clone();
+		} catch(CloneNotSupportedException e){
+			throw new AssertionError();
+		}
 	}
 }

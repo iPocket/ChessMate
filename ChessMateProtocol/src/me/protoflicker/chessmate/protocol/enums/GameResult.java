@@ -6,9 +6,10 @@ import java.util.HashMap;
 import java.util.Map;
 
 public enum GameResult {
-	LOSS("Loss", 0),
+	ONGOING("Ongoing", 0),
 	WIN("Win", 1),
-	ONGOING("Ongoing", 2);
+	Loss("Loss", 2),
+	DRAW("Draw", 3);
 
 	@Getter
 	private final String name;

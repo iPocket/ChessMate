@@ -202,7 +202,7 @@ public final class ParticipationTable {
 				userId BINARY(16) NOT NULL,
 				gameId BINARY(16) NOT NULL,
 				gameSide TINYINT(1) UNSIGNED NOT NULL,
-				result TINYINT(1) UNSIGNED DEFAULT 2 NOT NULL,
+				result TINYINT(1) UNSIGNED DEFAULT 0 NOT NULL,
 				PRIMARY KEY (participationId),
 				FOREIGN KEY (userId) REFERENCES Users(userId),
 				FOREIGN KEY (gameId) REFERENCES Games(gameId)

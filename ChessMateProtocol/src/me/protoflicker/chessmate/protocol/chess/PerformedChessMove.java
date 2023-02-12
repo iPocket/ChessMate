@@ -5,22 +5,35 @@ import lombok.Getter;
 
 import java.io.Serializable;
 import java.sql.Timestamp;
+import java.util.Objects;
 
 @Data
-public class PerformedChessMove implements Serializable {
+public class PerformedChessMove implements Serializable, Cloneable {
 
 	@Getter
-	private final int moveNumber;
+	private Timestamp timePlayed;
 
 	@Getter
-	private final Timestamp timePlayed;
+	private ChessMove move;
 
-	@Getter
-	private final ChessMove move;
-
-	public PerformedChessMove(int moveNumber, Timestamp timePlayed, ChessMove move){
-		this.moveNumber = moveNumber;
+	public PerformedChessMove(Timestamp timePlayed, ChessMove move){
 		this.timePlayed = timePlayed;
 		this.move = move;
+	}
+
+	@Override
+	public PerformedChessMove clone(){
+		try {
+			PerformedChessMove clone = (PerformedChessMove) super.clone();
+			clone.move = move.clone();
+			return clone;
+		} catch(CloneNotSupportedException e){
+			throw new AssertionError();
+		}
+	}
+
+	@Override
+	public int hashCode(){
+		return Objects.hash(timePlayed, move);
 	}
 }

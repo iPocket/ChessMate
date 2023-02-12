@@ -20,6 +20,18 @@ public abstract class ChessUtils {
 		return stringToBoard(getStartingBoardText());
 	}
 
+	public static ChessBoard getDemoBoard(){
+		return stringToBoard("Wr,Wn,Wb,Wq,Wk,Wb,Wn,Wr;" +
+				"Wp,Wp,Wp,Wp,Wp,Wp,Wp,Wp;" +
+				"Zz,Zz,Zz,Zz,Zz,Zz,Zz,Zz;" +
+				"Zz,Zz,Zz,Zz,Zz,Zz,Zz,Zz;" +
+				"Zz,Zz,Zz,Zz,Zz,Zz,Zz,Zz;" +
+				"Zz,Zz,Zz,Zz,Zz,Zz,Zz,Zz;" +
+				"Bp,Bp,Bp,Bp,Bp,Bp,Bp,Bp;" +
+				"Br,Zz,Zz,Br,Bk,Zz,Zz,Br");
+	}
+
+
 	public static ChessBoard stringToBoard(String boardString){
 		ChessPiece[][] board = new ChessPiece[8][8];
 		String[] ranks = boardString.split(";");

@@ -1,5 +1,6 @@
 package me.protoflicker.chessmate;
 
+import me.protoflicker.chessmate.console.ConsoleThread;
 import me.protoflicker.chessmate.console.Logger;
 import me.protoflicker.chessmate.util.JSONConfig;
 
@@ -19,11 +20,15 @@ public class Main {
 	public static final String CONFIG_FOLDER = WORKING_DIRECTORY + File.separator + "config";
 
 	public static final Thread MAIN_THREAD = Thread.currentThread();
+	public static ConsoleThread CONSOLE_THREAD;
 
 	public static void main(String[] args) throws Exception {
 		Logger.init();
 
 		Logger.getInstance().log("Starting " + NAME + " v" + VERSION + "...");
+
+		CONSOLE_THREAD = new ConsoleThread();
+		CONSOLE_THREAD.start();
 
 		Logger.getInstance().log("Loading config file...");
 

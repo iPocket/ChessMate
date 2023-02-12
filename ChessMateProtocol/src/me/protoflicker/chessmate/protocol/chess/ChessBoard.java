@@ -48,6 +48,21 @@ public class ChessBoard implements Serializable, Cloneable {
 //		return array;
 //	}
 
+	//experimental
+	private List<ChessPiece> findRawPieces(GameSide side){
+		List<ChessPiece> list = new ArrayList<>();
+		for(int i = 0; i < 8; i++){
+			for(int j = 0; j < 8; j++){
+				ChessPiece piece = board[i][j];
+				if(piece != null && (side == null || piece.getGameSide().equals(side))){
+					list.add(piece);
+				}
+			}
+		}
+
+		return list;
+	}
+
 	public List<LocatableChessPiece> findPieces(PieceType type, GameSide side){
 		List<LocatableChessPiece> list = new ArrayList<>();
 		for(int i = 0; i < 8; i++){
@@ -102,18 +117,31 @@ public class ChessBoard implements Serializable, Cloneable {
 	}
 
 	public PerformedChessMove getLastPerformedMove(){
-		if(performedMoves.size() > 0){
+		if(!performedMoves.isEmpty()){
 			return performedMoves.get(performedMoves.size() - 1);
 		} else {
 			return null;
 		}
 	}
 
+	public int getNumberOfPerformedMoves(){
+		return performedMoves.size();
+	}
+
 	public List<ChessMove> getMoves(LocatableChessPiece piece){
-		return getMoves(piece, true);
+		return getMoves(piece, true, true);
+	}
+
+	public List<ChessMove> getThreateningMoves(LocatableChessPiece piece){
+		return getMoves(piece, true, false);
 	}
 
 	public List<ChessMove> getMoves(LocatableChessPiece piece, boolean considerKings){
+		return getMoves(piece, considerKings, true);
+	}
+
+
+	public List<ChessMove> getMoves(LocatableChessPiece piece, boolean considerKings, boolean includeCastle){
 		ChessPosition loc = piece.getPosition();
 		List<ChessMove> moves = new ArrayList<>();
 
@@ -129,24 +157,30 @@ public class ChessBoard implements Serializable, Cloneable {
 				addMove(moves, MoveType.MOVE, piece, new ChessPosition(loc.getRank(), loc.getFile() - 1));
 				addMove(moves, MoveType.MOVE, piece, new ChessPosition(loc.getRank() + 1, loc.getFile() - 1));
 
-				if(considerKings && !isUnderThreat(piece, false)
-						&& performedMoves.stream().noneMatch(p -> p.getMove().getPieceFrom().equals(loc))){
+				if(includeCastle && considerKings && !isUnderThreat(piece, false)
+						&& performedMoves.stream().noneMatch(p ->  p.getMove().getPieceFrom().equals(loc)
+						|| p.getMove().getPieceTo().equals(loc))){
 					List<LocatableChessPiece> rooks = findPieces(PieceType.ROOK,
 							piece.getGameSide()).stream().filter(r -> r.getPosition().getRank() == loc.getRank()).toList();
 
 					for(LocatableChessPiece rook : rooks){
-						if(performedMoves.stream().noneMatch(p -> p.getMove().getPieceFrom().equals(rook.getPosition()))){
+						if(performedMoves.stream().noneMatch(p -> p.getMove().getMoveType() == MoveType.CASTLE || p.getMove().getPieceFrom().equals(rook.getPosition()) ||
+								p.getMove().getPieceTo().equals(rook.getPosition()))){
 							boolean canCastle = true;
 
 							int length = loc.getFileDifference(rook.getPosition());
 							boolean isIncrease = rook.getPosition().getFile() > loc.getFile();
+							double fileChange = (length + 1) / 2.0;
+							int kingFile = (int) (isIncrease ? Math.floor(fileChange) : -Math.floor(fileChange));
+
 							ChessPosition to;
-							for(int i = 1; i <= length; i++){
+							for(int i = 1; i < length; i++){
 								to = new ChessPosition(loc.getRank(), loc.getFile() + (i * (isIncrease ? 1 : -1)));
 								if(getRawPieceAtLocation(to.getRank(), to.getFile()) != null){
 									canCastle = false;
 									break;
-								} else if(isUnderThreat(to, piece.getGameSide())){
+								} else if((isIncrease ? to.getFile() <= loc.getFile() + kingFile : to.getFile() >= loc.getFile() - kingFile)
+										&& isUnderThreat(to, piece.getGameSide())){//is part of chess rules
 									canCastle = false;
 									break;
 								}
@@ -164,6 +198,7 @@ public class ChessBoard implements Serializable, Cloneable {
 			case QUEEN -> {
 				moves.addAll(getMoves(piece.getVersion(PieceType.ROOK), considerKings));
 				moves.addAll(getMoves(piece.getVersion(PieceType.BISHOP), considerKings));
+				moves.forEach(m -> m.setPieceMoved(piece.getPiece().getType()));
 				break;
 			}
 
@@ -276,6 +311,16 @@ public class ChessBoard implements Serializable, Cloneable {
 					addMove(moves, MoveType.MOVE, piece, forward);
 				}
 
+				ChessPosition right = new ChessPosition(loc.getRank() + rankChange, loc.getFile() + 1);
+				if(getRawPieceAtLocation(right.getRank(), right.getFile()) != null){
+					addMove(moves, MoveType.MOVE, piece, right);
+				}
+
+				ChessPosition left = new ChessPosition(loc.getRank() + rankChange, loc.getFile() - 1);
+				if(getRawPieceAtLocation(left.getRank(), left.getFile()) != null){
+					addMove(moves, MoveType.MOVE, piece, left);
+				}
+
 				int startingRank = piece.getGameSide() == GameSide.WHITE ? 1 : 6;
 				if(loc.getRank() == startingRank){
 					ChessPosition forwardTwice = new ChessPosition(loc.getRank() + rankChange * 2, loc.getFile());
@@ -287,9 +332,11 @@ public class ChessBoard implements Serializable, Cloneable {
 				PerformedChessMove lastMove = getLastPerformedMove();
 				if(lastMove != null
 						&& lastMove.getMove().getPieceMoved() == PieceType.PAWN
+						&& lastMove.getMove().getPieceTo().getRank() == loc.getRank()
 						&& lastMove.getMove().getPieceTo().getRankDifference(lastMove.getMove().getPieceFrom()) == 2){
-					addMove(moves, MoveType.EN_PASSANT, piece, new ChessPosition(loc.getRank() + rankChange, loc.getFile() + 1));
-					addMove(moves, MoveType.EN_PASSANT, piece, new ChessPosition(loc.getRank() + rankChange, loc.getFile() - 1));
+					addMove(moves, MoveType.EN_PASSANT, piece,
+							new ChessPosition(loc.getRank() + rankChange,
+									loc.getFile() + (lastMove.getMove().getPieceTo().getFile() - loc.getFile())));
 				}
 				break;
 			}
@@ -297,18 +344,10 @@ public class ChessBoard implements Serializable, Cloneable {
 
 
 		if(considerKings){
-			List<LocatableChessPiece> kings = getKings(piece.getGameSide());
-			System.out.println("King: " + kings.get(0).getPosition() + "");
 			moves.removeIf(m -> { //threatens own king
 				ChessBoard newBoard = this.clone();
 				newBoard.performMove(m, new Timestamp(System.currentTimeMillis()));
-				for(LocatableChessPiece king : kings){
-					if(newBoard.isUnderThreat(king, false)){
-						return true;
-					}
-				}
-
-				return false;
+				return newBoard.isKingUnderThreat(piece.getGameSide());
 			});
 		}
 
@@ -342,7 +381,7 @@ public class ChessBoard implements Serializable, Cloneable {
 
 	public void performMove(ChessMove move, Timestamp time){
 		doMove(move);
-		performedMoves.add(new PerformedChessMove(performedMoves.size() + 1, time, move));
+		performedMoves.add(new PerformedChessMove(time, move));
 	}
 
 	public void doMove(ChessMove move){
@@ -356,6 +395,9 @@ public class ChessBoard implements Serializable, Cloneable {
 				if(newType.equals(PieceType.PAWN)){
 					if((to.getRank() == 7 && move.getGameSide().equals(GameSide.WHITE))
 							|| (to.getRank() == 0 && move.getGameSide().equals(GameSide.BLACK))){
+						if(move.getPromotionPiece() == null){
+							move.setPromotionPiece(PieceType.QUEEN);
+						}
 						newType = move.getPromotionPiece();
 					} else {
 						move.setPromotionPiece(null);
@@ -370,15 +412,20 @@ public class ChessBoard implements Serializable, Cloneable {
 
 			case CASTLE -> {
 				int length = from.getFileDifference(to);
-				double fileChange = length / 2.0;
+				double fileChange = (length + 1) / 2.0;
 				boolean isIncrease = to.getFile() > from.getFile();
-				double kingFile = isIncrease ? Math.ceil(fileChange) : -Math.floor(fileChange);
+				int kingFileChange = (int) (isIncrease ? Math.floor(fileChange) : -Math.floor(fileChange));
+				ChessPosition kingPosition = new ChessPosition(from.getRank(), from.getFile() + kingFileChange);
+				ChessPosition rookPosition = new ChessPosition(from.getRank(), from.getFile() + kingFileChange - (isIncrease ? 1 : -1));
 
-				movePiece(from, new ChessPosition(from.getRank(), (int) (from.getFile() + kingFile)),
-						new ChessPiece(move.getPieceMoved(), move.getGameSide())); //king
+				board[from.getRank()][from.getFile()] = null;
+				board[kingPosition.getRank()][kingPosition.getFile()] = new ChessPiece(PieceType.KING, move.getGameSide());
 
-				movePiece(from, new ChessPosition(from.getRank(), (int) (from.getFile() + kingFile) - (isIncrease ? 1 : -1)),
-						new ChessPiece(PieceType.ROOK, move.getGameSide())); //rook
+				if(!kingPosition.equals(to)){
+					board[to.getRank()][to.getFile()] = null;
+				}
+
+				board[rookPosition.getRank()][rookPosition.getFile()] = new ChessPiece(PieceType.ROOK, move.getGameSide());
 				break;
 			}
 
@@ -404,54 +451,88 @@ public class ChessBoard implements Serializable, Cloneable {
 
 			case TAKE -> {
 				movePiece(to, from, new ChessPiece(move.getPromotionPiece() != null ? PieceType.PAWN : move.getPieceMoved(), move.getGameSide()));
-				replacePiece(to, getLastTakenPiece());
+				replacePiece(to, getAndRemoveLastTakenPiece());
 			}
 
 			case CASTLE -> {
 				int length = from.getFileDifference(to);
-				double fileChange = length / 2.0;
+				double fileChange = (length + 1) / 2.0;
 				boolean isIncrease = to.getFile() > from.getFile();
-				double kingFile = isIncrease ? Math.ceil(fileChange) : -Math.floor(fileChange);
+				int kingFileChange = (int) (isIncrease ? Math.floor(fileChange) : -Math.floor(fileChange));
+				ChessPosition kingPosition = new ChessPosition(from.getRank(), from.getFile() + kingFileChange);
+				ChessPosition rookPosition = new ChessPosition(from.getRank(), from.getFile() + kingFileChange - (isIncrease ? 1 : -1));
 
-				movePiece(new ChessPosition(from.getRank(), (int) (from.getFile() + kingFile)), from,
-						new ChessPiece(move.getPieceMoved(), move.getGameSide())); //king
+				board[rookPosition.getRank()][rookPosition.getFile()] = null;
+				board[to.getRank()][to.getFile()] = new ChessPiece(PieceType.ROOK, move.getGameSide());
 
-				movePiece(new ChessPosition(from.getRank(), (int) (from.getFile() + kingFile) - (isIncrease ? 1 : -1)), from,
-						new ChessPiece(PieceType.ROOK, move.getGameSide())); //rook
+				if(!kingPosition.equals(to)){
+					board[kingPosition.getRank()][kingPosition.getFile()] = null;
+				}
+
+				board[from.getRank()][from.getFile()] = new ChessPiece(PieceType.KING, move.getGameSide());
 				break;
 			}
 
 			case EN_PASSANT -> {
-				replacePiece(new ChessPosition(from.getRank(), to.getFile()), getLastTakenPiece());
+				replacePiece(new ChessPosition(from.getRank(), to.getFile()), getAndRemoveLastTakenPiece());
 				movePiece(to, from, new ChessPiece(move.getPieceMoved(), move.getGameSide()));
 				break;
 			}
 
 			case EN_PASSANT_TAKE -> {
-				replacePiece(new ChessPosition(from.getRank(), to.getFile()), getLastTakenPiece());
+				replacePiece(new ChessPosition(from.getRank(), to.getFile()), getAndRemoveLastTakenPiece());
 				movePiece(to, from, new ChessPiece(move.getPieceMoved(), move.getGameSide()));
-				replacePiece(to, getLastTakenPiece());
+				replacePiece(to, getAndRemoveLastTakenPiece());
 				break;
 			}
 		}
 	}
 
+	//for experimental purposes
+	public ChessMove tryGetValidMove(ChessPosition from, ChessPosition to){
+		LocatableChessPiece piece = getPieceAtLocation(from);
+		if(piece != null){
+			List<ChessMove> moves = getMoves(piece);
+			for(ChessMove move : moves){
+				if(move.getPieceTo().equals(to)){
+					return move;
+				}
+			}
+		}
+
+		return null;
+	}
+
+	public boolean isValid(ChessMove move){
+		LocatableChessPiece piece = getPieceAtLocation(move.getPieceFrom());
+		if(piece != null){
+			return getMoves(piece).stream().anyMatch(m -> m.equals(move));
+		}
+
+		return false;
+	}
+
 	public ChessBoard getBoardAtMove(int moveNumber){
+		int numberOfMoves = getNumberOfPerformedMoves();
 		PerformedChessMove originalLast = getLastPerformedMove();
 
-		if(originalLast.getMoveNumber() > moveNumber){
+		if(numberOfMoves > moveNumber){
 			PerformedChessMove last;
 			ChessBoard newBoard = this.clone();
-			for(int i = 0; i < originalLast.getMoveNumber() - moveNumber; i++){
-				last = newBoard.getLastPerformedMove();
-				newBoard.undoMove(last.getMove());
-				newBoard.performedMoves.remove(last);
+			for(int i = 0; i < numberOfMoves - moveNumber; i++){
+				newBoard.undoLastMove();
 			}
 
 			return newBoard;
 		} else {
 			return this.clone();
 		}
+	}
+
+	public void undoLastMove(){
+		PerformedChessMove last = getLastPerformedMove();
+		undoMove(last.getMove());
+		performedMoves.remove(last);
 	}
 
 	public void replacePiece(LocatableChessPiece locatableChessPiece, ChessPiece newPiece){
@@ -477,6 +558,10 @@ public class ChessBoard implements Serializable, Cloneable {
 		replacePiece(to, piece);
 	}
 
+	public ChessPiece getAndRemoveLastTakenPiece(){
+		return takenPieces.remove(takenPieces.size()-1);
+	}
+
 	public ChessPiece getLastTakenPiece(){
 		return takenPieces.get(takenPieces.size()-1);
 	}
@@ -496,7 +581,7 @@ public class ChessBoard implements Serializable, Cloneable {
 	public boolean isUnderThreat(ChessPosition position, GameSide gameSide, boolean considerKings){
 		List<LocatableChessPiece> pieces = findPieces(gameSide.getOpposite());
 		for(LocatableChessPiece piece : pieces){
-			for(ChessMove move : getMoves(piece, considerKings)){
+			for(ChessMove move : getMoves(piece, considerKings, false)){
 				if(move.getMoveType().isCanTake() && move.getPieceTo().equals(position)){
 					return true;
 				}
@@ -506,9 +591,9 @@ public class ChessBoard implements Serializable, Cloneable {
 		return false;
 	}
 
-	public boolean isCheckmateFor(GameSide gameSide){
-		for(LocatableChessPiece king : getKings(gameSide)){
-			if(getMoves(king).size() == 0){
+	public boolean hasLegalMoves(GameSide gameSide){
+		for(LocatableChessPiece piece : findPieces(gameSide)){
+			if(!getMoves(piece, true, false).isEmpty()){
 				return true;
 			}
 		}
@@ -516,13 +601,93 @@ public class ChessBoard implements Serializable, Cloneable {
 		return false;
 	}
 
+	public boolean isKingUnderThreat(GameSide gameSide){
+		for(LocatableChessPiece king : getKings(gameSide)){
+			if(isUnderThreat(king, false)){
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	public boolean isDrawByInsufficientMaterial(){
+		int insufficient = 0;
+		for(GameSide side : GameSide.values()){
+			List<ChessPiece> pieces = findRawPieces(side);
+			if(pieces.size() == 1
+					|| (pieces.size() == 2 && (pieces.contains(new ChessPiece(PieceType.KNIGHT, side))
+						|| pieces.contains(new ChessPiece(PieceType.BISHOP, side))))){ //lone king, lone king + knight/bishop
+				insufficient++;
+			}
+		}
+
+		return insufficient == 2;
+	}
+
+	public String getAsciiDisplay(){
+		return getAsciiDisplay(false);
+	}
+
+	public String getAsciiDisplay(boolean useAnsi){
+		StringBuilder display = new StringBuilder("\n");
+		for(int i = 7; i >= 0; i--){
+			for(int j = 0; j < 8; j++){
+				ChessPiece piece = board[i][j];
+				if(piece != null){
+					if(useAnsi){
+						display.append("\u001B[40m");
+					}
+					display.append(piece.getAsciiDisplay());
+					if(useAnsi){
+						display.append("\u001B[0m");
+					}
+				} else {
+					display.append("\u001B[30m▇\u001B[0m");
+				}
+			}
+			display.append("\n");
+		}
+		return display.toString();
+	}
+
+	private static ChessPiece[][] cloneBoard(ChessPiece[][] board){
+		ChessPiece[][] newBoard = new ChessPiece[8][8];
+		for(int i = 0; i < 8; i++){
+			for(int j = 0; j < 8; j++){
+				ChessPiece piece = board[i][j];
+				if(piece != null){
+					newBoard[i][j] = piece.clone();
+				}
+			}
+		}
+
+		return newBoard;
+	}
+
+	private static List<PerformedChessMove> clonePerformedMoves(List<PerformedChessMove> moves){
+		List<PerformedChessMove> newMoves = new ArrayList<>();
+		for(PerformedChessMove move : moves){
+			newMoves.add(move.clone());
+		}
+		return newMoves;
+	}
+
+	private static List<ChessPiece> clonePieces(List<ChessPiece> pieces){
+		List<ChessPiece> newPieces = new ArrayList<>();
+		for(ChessPiece piece : pieces){
+			newPieces.add(piece.clone());
+		}
+		return newPieces;
+	}
+
 	@Override
 	public ChessBoard clone(){
 		try {
 			ChessBoard clone = (ChessBoard) super.clone();
-			clone.board = board.clone();
-			clone.performedMoves = new ArrayList<>(performedMoves);
-			this.takenPieces = new ArrayList<>(takenPieces);
+			clone.board = cloneBoard(board);
+			clone.performedMoves = clonePerformedMoves(performedMoves);
+			clone.takenPieces = clonePieces(takenPieces);
 			return clone;
 		} catch(CloneNotSupportedException e){
 			throw new AssertionError();

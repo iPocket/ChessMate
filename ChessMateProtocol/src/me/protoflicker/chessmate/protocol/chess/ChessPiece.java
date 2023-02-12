@@ -26,6 +26,54 @@ public class ChessPiece implements Serializable, Cloneable {
 		return new ChessPiece(type, this.gameSide);
 	}
 
+	public String getAsciiDisplay(){
+		if(gameSide == GameSide.WHITE){
+			switch(type){
+				case KING -> {
+					return "♔";
+				}
+				case QUEEN -> {
+					return "♕";
+				}
+				case ROOK -> {
+					return "♖";
+				}
+				case BISHOP -> {
+					return "♗";
+				}
+				case KNIGHT -> {
+					return "♘";
+				}
+				case PAWN -> {
+					return "♙";
+				}
+			}
+		} else {
+			switch(type){
+				case KING -> {
+					return "♚";
+				}
+				case QUEEN -> {
+					return "♛";
+				}
+				case ROOK -> {
+					return "♜";
+				}
+				case BISHOP -> {
+					return "♝";
+				}
+				case KNIGHT -> {
+					return "♞";
+				}
+				case PAWN -> {
+					return "♟︎";
+				}
+			}
+		}
+
+		return " ";
+	}
+
 	@Override
 	public boolean equals(Object obj){
 		if(obj == this){

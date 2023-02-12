@@ -7,8 +7,9 @@ import me.protoflicker.chessmate.protocol.enums.MoveType;
 import me.protoflicker.chessmate.protocol.enums.PieceType;
 
 import java.io.Serializable;
+import java.util.Objects;
 
-public class ChessMove implements Serializable {
+public class ChessMove implements Serializable, Cloneable {
 
 	@Getter
 	@Setter
@@ -18,13 +19,14 @@ public class ChessMove implements Serializable {
 	private GameSide gameSide;
 
 	@Getter
+	@Setter
 	private PieceType pieceMoved;
 
 	@Getter
-	private final ChessPosition pieceFrom;
+	private ChessPosition pieceFrom;
 
 	@Getter
-	private final ChessPosition pieceTo;
+	private ChessPosition pieceTo;
 
 	@Getter
 	@Setter
@@ -41,5 +43,35 @@ public class ChessMove implements Serializable {
 		this.pieceFrom = pieceFrom;
 		this.pieceTo = pieceTo;
 		this.promotionPiece = promotionPiece;
+	}
+
+	@Override
+	public boolean equals(Object obj){
+		if(obj == this){
+			return true;
+		}
+		if(obj == null || obj.getClass() != this.getClass()){
+			return false;
+		}
+		var that = (ChessMove) obj;
+		return this.moveType == that.moveType && this.gameSide == that.gameSide && this.pieceMoved == that.pieceMoved
+				&& this.pieceFrom.equals(that.pieceFrom) && this.pieceTo.equals(that.pieceTo)/* && this.promotionPiece == that.promotionPiece*/;
+	}
+
+	@Override
+	public int hashCode(){
+		return Objects.hash(moveType, gameSide, pieceMoved, pieceFrom, pieceTo, promotionPiece);
+	}
+
+	@Override
+	public ChessMove clone(){
+		try {
+			ChessMove clone = (ChessMove) super.clone();
+			clone.pieceFrom = pieceFrom.clone();
+			clone.pieceTo = pieceTo.clone();
+			return clone;
+		} catch(CloneNotSupportedException e){
+			throw new AssertionError();
+		}
 	}
 }

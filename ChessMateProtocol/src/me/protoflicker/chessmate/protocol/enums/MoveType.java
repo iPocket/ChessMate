@@ -6,12 +6,12 @@ import java.util.HashMap;
 import java.util.Map;
 
 public enum MoveType {
-	MOVE("Move", false, 0),
+	MOVE("Move", true, 0),
 	TAKE("Take", true, 1),
 	CASTLE("Castle", false, 2),
-	EN_PASSANT("En Passant", false, 3),
-	EN_PASSANT_TAKE("En Passant Take", true, 4),
-	RESIGNATION("Resignation", false, 5);
+	EN_PASSANT("En Passant", true, 3),
+	EN_PASSANT_TAKE("En Passant Take", true, 4);
+//	RESIGNATION("Resignation", false, 5);
 
 	@Getter
 	private final String name;
