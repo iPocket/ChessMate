@@ -2,7 +2,7 @@ package me.protoflicker.chessmate.data.table;
 
 import me.protoflicker.chessmate.Server;
 import me.protoflicker.chessmate.data.Database;
-import me.protoflicker.chessmate.protocol.enums.AccountType;
+import me.protoflicker.chessmate.protocol.chess.enums.AccountType;
 
 import java.sql.*;
 
@@ -74,6 +74,25 @@ public abstract class UserTable {
 		}
 	}
 
+	public static void setHashedPassword(byte[] userId, String password){
+		String statement =
+				"""
+				UPDATE `Users`
+				SET password = ?
+				WHERE userId = ?;
+				""";
+
+		try (PreparedStatement s = Server.getThreadDatabase().getConnection().prepareStatement(statement)){
+			s.setString(1, password);
+			s.setBytes(2, userId);
+			s.executeUpdate();
+
+		} catch (SQLException e){
+			return; //no exception needed
+		}
+	}
+
+
 	public static AccountType getAccountType(byte[] userId){
 		String statement =
 				"""
@@ -135,6 +154,42 @@ public abstract class UserTable {
 			} else {
 				return null;
 			}
+		} catch (SQLException e){
+			throw new RuntimeException(e);
+		}
+	}
+
+	public static void updateLastLogin(byte[] userId){
+		String statement =
+				"""
+				UPDATE `Users`
+				SET lastLogin = ?
+				WHERE userId = ?;
+				""";
+
+		try (PreparedStatement s = Server.getThreadDatabase().getConnection().prepareStatement(statement)){
+			s.setTimestamp(1, new Timestamp(System.currentTimeMillis()));
+			s.setBytes(2, userId);
+			s.executeUpdate();
+
+		} catch (SQLException e){
+			return; //no exception needed
+		}
+	}
+
+	public static void createUser(String username, String hashedPassword, Date birthday, AccountType type){
+		String statement =
+				"""
+				INSERT INTO `Users` (username, password, birthday, accountType)
+				VALUES (?, ?, ?, ?);
+				""";
+
+		try (PreparedStatement s = Server.getThreadDatabase().getConnection().prepareStatement(statement)){
+			s.setString(1, username);
+			s.setString(2, hashedPassword);
+			s.setDate(3, birthday);
+			s.setInt(4, type.getCode());
+			s.executeUpdate();
 		} catch (SQLException e){
 			throw new RuntimeException(e);
 		}

@@ -4,7 +4,7 @@ import me.protoflicker.chessmate.protocol.chess.ChessBoard;
 import me.protoflicker.chessmate.protocol.chess.ChessMove;
 import me.protoflicker.chessmate.protocol.chess.ChessPosition;
 import me.protoflicker.chessmate.protocol.chess.ChessUtils;
-import me.protoflicker.chessmate.protocol.enums.GameSide;
+import me.protoflicker.chessmate.protocol.chess.enums.GameSide;
 
 import java.sql.Timestamp;
 import java.util.Scanner;
@@ -19,7 +19,7 @@ public class ConsoleThread extends Thread {
 	public void run(){
 		Scanner scan = new Scanner(System.in).useDelimiter("\n");
 		String text;
-		ChessBoard board = ChessUtils.getDemoBoard();
+		ChessBoard board = ChessUtils.getStartingBoard();
 		while(!isInterrupted()){
 			try {
 				text = scan.next();
@@ -36,7 +36,7 @@ public class ConsoleThread extends Thread {
 						}
 					}
 				}
-				Logger.getInstance().log(board.getTakenPieces().size() + "");
+				Logger.getInstance().log(board.getGameStatus().getName());
 				Logger.getInstance().log(board.getAsciiDisplay(true));
 			} catch (Exception e){
 				continue;

@@ -5,9 +5,9 @@ import me.protoflicker.chessmate.data.Database;
 import me.protoflicker.chessmate.protocol.chess.ChessMove;
 import me.protoflicker.chessmate.protocol.chess.ChessPosition;
 import me.protoflicker.chessmate.protocol.chess.PerformedChessMove;
-import me.protoflicker.chessmate.protocol.enums.GameSide;
-import me.protoflicker.chessmate.protocol.enums.MoveType;
-import me.protoflicker.chessmate.protocol.enums.PieceType;
+import me.protoflicker.chessmate.protocol.chess.enums.GameSide;
+import me.protoflicker.chessmate.protocol.chess.enums.MoveType;
+import me.protoflicker.chessmate.protocol.chess.enums.PieceType;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -121,7 +121,6 @@ public final class MovesTable {
 			);
 	}
 
-	//todo fix incrementer
 	//moveNumber SMALLINT(16) UNSIGNED AUTO_INCREMENT NOT NULL,
 	public static void createTable(Database database){
 		String statement =
@@ -136,7 +135,7 @@ public final class MovesTable {
 				pieceMoved CHAR(1),
 				promotionPiece CHAR(1),
 				PRIMARY KEY (gameId, moveNumber),
-				FOREIGN KEY (gameId) REFERENCES Games(gameId)
+				FOREIGN KEY (gameId) REFERENCES Games(gameId) ON DELETE CASCADE
 				);
 				""";
 

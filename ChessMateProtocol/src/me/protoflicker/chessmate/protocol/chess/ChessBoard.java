@@ -1,14 +1,18 @@
 package me.protoflicker.chessmate.protocol.chess;
 
 import lombok.Getter;
-import me.protoflicker.chessmate.protocol.enums.GameSide;
-import me.protoflicker.chessmate.protocol.enums.MoveType;
-import me.protoflicker.chessmate.protocol.enums.PieceType;
+import lombok.Setter;
+import me.protoflicker.chessmate.protocol.chess.enums.GameSide;
+import me.protoflicker.chessmate.protocol.chess.enums.GameStatus;
+import me.protoflicker.chessmate.protocol.chess.enums.MoveType;
+import me.protoflicker.chessmate.protocol.chess.enums.PieceType;
 
 import java.io.Serializable;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class ChessBoard implements Serializable, Cloneable {
 
@@ -16,13 +20,49 @@ public class ChessBoard implements Serializable, Cloneable {
 	private ChessPiece[][] board = new ChessPiece[8][8];
 
 	@Getter
+	private final Timestamp startingTime;
+
+	@Getter
 	private List<PerformedChessMove> performedMoves = new ArrayList<>();
 
 	@Getter
 	private List<ChessPiece> takenPieces = new ArrayList<>();
 
+	@Getter
+	@Setter
+	private GameStatus gameStatus = GameStatus.ONGOING;
+
+	@Getter
+	private final Map<GameSide, Long> timeRemaining = new HashMap<>();
+
+	@Getter
+	private final long timeConstraint;
+
+	@Getter
+	private final long timeIncrement;
+
+	@Getter
+	@Setter
+	private boolean isDummy;
+
 	public ChessBoard(ChessPiece[][] board){
+		this(board, new Timestamp(System.currentTimeMillis()));
+	}
+
+	public ChessBoard(ChessPiece[][] board, Timestamp startingTime){
+		this(board, startingTime, 0, 0);
+	}
+
+	public ChessBoard(ChessPiece[][] board, Timestamp startingTime, long timeConstraint, long timeIncrement){
 		this.board = board;
+		this.startingTime = startingTime;
+		this.timeConstraint = timeConstraint;
+		this.timeIncrement = timeIncrement;
+		if(timeConstraint > 0){
+			for(GameSide side : GameSide.values()){
+				timeRemaining.put(side, timeConstraint);
+			}
+		}
 	}
 
 //	public ChessBoard(ChessPiece[][] board, List<PerformedChessMove> performedMoves){
@@ -119,6 +159,14 @@ public class ChessBoard implements Serializable, Cloneable {
 	public PerformedChessMove getLastPerformedMove(){
 		if(!performedMoves.isEmpty()){
 			return performedMoves.get(performedMoves.size() - 1);
+		} else {
+			return null;
+		}
+	}
+
+	public PerformedChessMove getPenultimatePerformedMove(){
+		if(performedMoves.size() > 1){
+			return performedMoves.get(performedMoves.size() - 2);
 		} else {
 			return null;
 		}
@@ -346,6 +394,8 @@ public class ChessBoard implements Serializable, Cloneable {
 		if(considerKings){
 			moves.removeIf(m -> { //threatens own king
 				ChessBoard newBoard = this.clone();
+				newBoard.setGameStatus(GameStatus.ONGOING);
+				newBoard.setDummy(true);
 				newBoard.performMove(m, new Timestamp(System.currentTimeMillis()));
 				return newBoard.isKingUnderThreat(piece.getGameSide());
 			});
@@ -357,10 +407,8 @@ public class ChessBoard implements Serializable, Cloneable {
 	private void addMove(List<ChessMove> moves, MoveType moveType, LocatableChessPiece piece, ChessPosition to){
 		if(to.getRank() >= 0 && to.getRank() <= 7 && to.getFile() >= 0 && to.getFile() <= 7){
 			LocatableChessPiece r = getPieceAtLocation(to);
-			if(moveType.equals(MoveType.MOVE) || moveType.equals(MoveType.EN_PASSANT)){
-				if(r != null){
-					moveType = moveType.getTakeVersion();
-				}
+			if(moveType.equals(MoveType.MOVE) && r != null){
+				moveType = MoveType.TAKE;
 			}
 
 			if(moveType.isCanTake()){
@@ -382,9 +430,13 @@ public class ChessBoard implements Serializable, Cloneable {
 	public void performMove(ChessMove move, Timestamp time){
 		doMove(move);
 		performedMoves.add(new PerformedChessMove(time, move));
+		if(move.getMoveType().isPieceMove()){
+			removeTime(move.getGameSide(), getTimeTakenForLastMove() - timeIncrement - 500);
+		}
+		updateGameStatus();
 	}
 
-	public void doMove(ChessMove move){
+	private void doMove(ChessMove move){
 		ChessPosition from = move.getPieceFrom();
 		ChessPosition to = move.getPieceTo();
 		switch(move.getMoveType()){
@@ -429,9 +481,19 @@ public class ChessBoard implements Serializable, Cloneable {
 				break;
 			}
 
-			case EN_PASSANT, EN_PASSANT_TAKE -> {
+			case EN_PASSANT -> {
 				movePiece(from, to, new ChessPiece(move.getPieceMoved(), move.getGameSide()));
 				replacePiece(new ChessPosition(from.getRank(), to.getFile()), null);
+				break;
+			}
+
+			case RESIGNATION -> {
+				setGameStatus(move.getGameSide() == GameSide.WHITE ? GameStatus.BLACK_WIN_RESIGNATION : GameStatus.WHITE_WIN_RESIGNATION);
+				break;
+			}
+
+			case DRAW_AGREEMENT -> {
+				setGameStatus(GameStatus.DRAW_BY_AGREEMENT);
 				break;
 			}
 		}
@@ -479,10 +541,8 @@ public class ChessBoard implements Serializable, Cloneable {
 				break;
 			}
 
-			case EN_PASSANT_TAKE -> {
-				replacePiece(new ChessPosition(from.getRank(), to.getFile()), getAndRemoveLastTakenPiece());
-				movePiece(to, from, new ChessPiece(move.getPieceMoved(), move.getGameSide()));
-				replacePiece(to, getAndRemoveLastTakenPiece());
+			case RESIGNATION, DRAW_AGREEMENT -> {
+				setGameStatus(GameStatus.ONGOING);
 				break;
 			}
 		}
@@ -504,9 +564,15 @@ public class ChessBoard implements Serializable, Cloneable {
 	}
 
 	public boolean isValid(ChessMove move){
-		LocatableChessPiece piece = getPieceAtLocation(move.getPieceFrom());
-		if(piece != null){
-			return getMoves(piece).stream().anyMatch(m -> m.equals(move));
+		if(gameStatus == GameStatus.ONGOING && getCurrentTurn() == move.getGameSide()){
+			if(move.getMoveType().isPieceMove()){
+				LocatableChessPiece piece = getPieceAtLocation(move.getPieceFrom());
+				if(piece != null){
+					return getMoves(piece).stream().anyMatch(m -> m.equals(move));
+				}
+			} else {
+				return true;
+			}
 		}
 
 		return false;
@@ -532,6 +598,7 @@ public class ChessBoard implements Serializable, Cloneable {
 	public void undoLastMove(){
 		PerformedChessMove last = getLastPerformedMove();
 		undoMove(last.getMove());
+		addTime(last.getMove().getGameSide(), getTimeTakenForLastMove() - timeIncrement - 500);
 		performedMoves.remove(last);
 	}
 
@@ -593,7 +660,7 @@ public class ChessBoard implements Serializable, Cloneable {
 
 	public boolean hasLegalMoves(GameSide gameSide){
 		for(LocatableChessPiece piece : findPieces(gameSide)){
-			if(!getMoves(piece, true, false).isEmpty()){
+			if(!getMoves(piece, true).isEmpty()){
 				return true;
 			}
 		}
@@ -623,6 +690,60 @@ public class ChessBoard implements Serializable, Cloneable {
 		}
 
 		return insufficient == 2;
+	}
+
+	public long getTimeTakenForLastMove(){
+		if(performedMoves.size() == 1){
+			return getLastPerformedMove().getTimePlayed().getTime() - startingTime.getTime();
+//			return 0;
+		} else {
+			return getLastPerformedMove().getTimePlayed().getTime() - getPenultimatePerformedMove().getTimePlayed().getTime();
+		}
+	}
+
+	public GameSide getCurrentTurn(){
+		return performedMoves.size() % 2 == 0 ? GameSide.WHITE : GameSide.BLACK;
+	}
+
+	private void updateGameStatus(){
+		if(!isDummy && gameStatus == GameStatus.ONGOING){
+			GameSide turn = getCurrentTurn();
+			if(!hasLegalMoves(turn)){
+				if(isKingUnderThreat(turn)){
+					setGameStatus(turn == GameSide.WHITE ? GameStatus.BLACK_WIN_CHECKMATE : GameStatus.WHITE_WIN_CHECKMATE);
+				} else {
+					setGameStatus(GameStatus.DRAW_BY_STALEMATE);
+				}
+			} else if(isDrawByInsufficientMaterial()){
+				setGameStatus(GameStatus.DRAW_BY_INSUFFICIENT_MATERIAL);
+			}
+
+			updateTimingStatus();
+		}
+	}
+
+	public void updateTimingStatus(){
+		GameSide turn = getCurrentTurn();
+
+		if(!timeRemaining.isEmpty()){
+			if(timeRemaining.get(turn.getOpposite()) <= 0){
+				setGameStatus(turn.getOpposite() == GameSide.WHITE ? GameStatus.BLACK_WIN_TIMEOUT : GameStatus.WHITE_WIN_TIMEOUT);
+			} else if(timeRemaining.get(turn) <= 0){
+				setGameStatus(turn == GameSide.WHITE ? GameStatus.BLACK_WIN_TIMEOUT : GameStatus.WHITE_WIN_TIMEOUT);
+			}
+		}
+	}
+
+	public void addTime(GameSide side, long time){
+		if(!timeRemaining.isEmpty()){
+			timeRemaining.replace(side, timeRemaining.get(side) + time);
+		}
+	}
+
+	public void removeTime(GameSide side, long time){
+		if(!timeRemaining.isEmpty()){
+			timeRemaining.replace(side, timeRemaining.get(side) + time);
+		}
 	}
 
 	public String getAsciiDisplay(){
@@ -689,7 +810,7 @@ public class ChessBoard implements Serializable, Cloneable {
 			clone.performedMoves = clonePerformedMoves(performedMoves);
 			clone.takenPieces = clonePieces(takenPieces);
 			return clone;
-		} catch(CloneNotSupportedException e){
+		} catch (CloneNotSupportedException e){
 			throw new AssertionError();
 		}
 	}

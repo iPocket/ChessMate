@@ -1,8 +1,8 @@
 package me.protoflicker.chessmate.protocol.chess;
 
 import lombok.Getter;
-import me.protoflicker.chessmate.protocol.enums.GameSide;
-import me.protoflicker.chessmate.protocol.enums.PieceType;
+import me.protoflicker.chessmate.protocol.chess.enums.GameSide;
+import me.protoflicker.chessmate.protocol.chess.enums.PieceType;
 
 import java.io.Serializable;
 import java.util.Objects;

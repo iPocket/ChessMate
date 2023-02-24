@@ -1,7 +1,7 @@
 package me.protoflicker.chessmate.protocol.chess;
 
-import me.protoflicker.chessmate.protocol.enums.GameSide;
-import me.protoflicker.chessmate.protocol.enums.PieceType;
+import me.protoflicker.chessmate.protocol.chess.enums.GameSide;
+import me.protoflicker.chessmate.protocol.chess.enums.PieceType;
 
 public abstract class ChessUtils {
 
@@ -17,22 +17,22 @@ public abstract class ChessUtils {
 	}
 
 	public static ChessBoard getStartingBoard(){
-		return stringToBoard(getStartingBoardText());
+		return new ChessBoard(stringToBoard(getStartingBoardText()));
 	}
 
 	public static ChessBoard getDemoBoard(){
-		return stringToBoard("Wr,Wn,Wb,Wq,Wk,Wb,Wn,Wr;" +
+		return new ChessBoard(stringToBoard("Wr,Wn,Wb,Wq,Wk,Wb,Wn,Wr;" +
 				"Wp,Wp,Wp,Wp,Wp,Wp,Wp,Wp;" +
 				"Zz,Zz,Zz,Zz,Zz,Zz,Zz,Zz;" +
 				"Zz,Zz,Zz,Zz,Zz,Zz,Zz,Zz;" +
 				"Zz,Zz,Zz,Zz,Zz,Zz,Zz,Zz;" +
 				"Zz,Zz,Zz,Zz,Zz,Zz,Zz,Zz;" +
 				"Bp,Bp,Bp,Bp,Bp,Bp,Bp,Bp;" +
-				"Br,Zz,Zz,Br,Bk,Zz,Zz,Br");
+				"Br,Zz,Zz,Br,Bk,Zz,Zz,Br"));
 	}
 
 
-	public static ChessBoard stringToBoard(String boardString){
+	public static ChessPiece[][] stringToBoard(String boardString){
 		ChessPiece[][] board = new ChessPiece[8][8];
 		String[] ranks = boardString.split(";");
 		for(int i = 0; i < 8; i++){
@@ -42,7 +42,7 @@ public abstract class ChessUtils {
 			}
 		}
 
-		return new ChessBoard(board);
+		return board;
 	}
 
 	public static ChessPiece codeToPiece(String code){

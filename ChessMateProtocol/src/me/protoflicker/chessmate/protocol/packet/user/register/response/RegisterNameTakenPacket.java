@@ -1,4 +1,4 @@
-package me.protoflicker.chessmate.protocol.packet.user.register;
+package me.protoflicker.chessmate.protocol.packet.user.register.response;
 
 import lombok.Getter;
 

@@ -1,4 +1,4 @@
-package me.protoflicker.chessmate.protocol.enums;
+package me.protoflicker.chessmate.protocol.chess.enums;
 
 import lombok.Getter;
 

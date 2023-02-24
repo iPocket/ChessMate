@@ -7,7 +7,6 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
-//TODO connection pooling
 public final class SQLDatabase implements Database {
 
 	@Getter

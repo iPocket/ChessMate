@@ -3,6 +3,7 @@ package me.protoflicker.chessmate.data.table;
 import me.protoflicker.chessmate.Server;
 import me.protoflicker.chessmate.data.Database;
 import me.protoflicker.chessmate.protocol.chess.ChessUtils;
+import me.protoflicker.chessmate.protocol.chess.enums.GameStatus;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -38,28 +39,6 @@ public final class GameTable {
 		String statement =
 				"""
 				SELECT startTime
-				FROM `Games`
-				WHERE gameId = ?
-				LIMIT 1;
-				""";
-
-		try (PreparedStatement s = Server.getThreadDatabase().getConnection().prepareStatement(statement)){
-			s.setBytes(1, gameId);
-			ResultSet r = s.executeQuery();
-			if(r.next()){
-				return r.getTimestamp(1);
-			} else {
-				return null;
-			}
-		} catch (SQLException e){
-			throw new RuntimeException(e);
-		}
-	}
-
-	public static Timestamp getEndTime(byte[] gameId){
-		String statement =
-				"""
-				SELECT endTime
 				FROM `Games`
 				WHERE gameId = ?
 				LIMIT 1;
@@ -144,17 +123,60 @@ public final class GameTable {
 		}
 	}
 
+	public static GameStatus getGameStatus(byte[] gameId){
+		String statement =
+				"""
+				SELECT status
+				FROM `Games`
+				WHERE gameId = ?
+				LIMIT 1;
+				""";
+
+		try (PreparedStatement s = Server.getThreadDatabase().getConnection().prepareStatement(statement)){
+			s.setBytes(1, gameId);
+			ResultSet r = s.executeQuery();
+			if(r.next()){
+				return GameStatus.getByCode(r.getInt(1));
+			} else {
+				return null;
+			}
+		} catch (SQLException e){
+			throw new RuntimeException(e);
+		}
+	}
+
+	public static void setGameStatus(byte[] gameId, GameStatus status){
+		String statement =
+				"""
+				UPDATE `Games`
+				SET status = ?
+				WHERE gameId = ?;
+				""";
+
+		try (PreparedStatement s = Server.getThreadDatabase().getConnection().prepareStatement(statement)){
+			s.setInt(1, status.getCode());
+			s.setBytes(2, gameId);
+			s.executeUpdate();
+
+		} catch (SQLException e){
+			return; //no exception needed
+		}
+	}
+
+
+
+
 	public static void createTable(Database database){
 		String statement =
 				"""
 				CREATE TABLE IF NOT EXISTS `Games` (
 				gameId BINARY(16) DEFAULT (UNHEX(REPLACE(UUID(), "-",""))) NOT NULL UNIQUE,
-				gameName VARCHAR(32) DEFAULT "Unnamed Game" NOT NULL,
+				gameName VARCHAR(64) DEFAULT "Unnamed Game" NOT NULL,
 				startTime TIMESTAMP DEFAULT (NOW()) NOT NULL,
-				endTime TIMESTAMP DEFAULT (0) NOT NULL,
-				startingBoard VARCHAR(191) DEFAULT ("%MedicBag%") NOT NULL,
+				startingBoard CHAR(191) DEFAULT ("%MedicBag%") NOT NULL,
 				timeConstraint INT(16) UNSIGNED NOT NULL,
 				timeIncrement INT(16) UNSIGNED NOT NULL,
+				status TINYINT(1) UNSIGNED DEFAULT 0 NOT NULL,
 				PRIMARY KEY (gameId)
 				);
 				""".replace("%MedicBag%", ChessUtils.getStartingBoardText());

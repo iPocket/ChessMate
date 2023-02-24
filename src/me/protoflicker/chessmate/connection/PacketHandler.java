@@ -1,7 +1,7 @@
 package me.protoflicker.chessmate.connection;
 
-import me.protoflicker.chessmate.protocol.Packet;
+import me.protoflicker.chessmate.protocol.packet.ClientPacket;
 
 public interface PacketHandler {
-	public void handle(ClientThread client, Packet packet);
+	public void handle(ClientThread client, ClientPacket packet);
 }

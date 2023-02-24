@@ -10,19 +10,19 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.concurrent.TimeUnit;
 
-public class AuthKeyTable {
+public class TokenTable {
 
-	public static byte[] getUserIdByAuthKey(String authKey){
+	public static byte[] getUserIdByToken(String token){
 		String statement =
 				"""
 				SELECT userId
-				FROM `AuthKeys`
-				WHERE authKey = ? AND expiry < NOW()
+				FROM `Tokens`
+				WHERE token = ? AND expiry < NOW()
 				LIMIT 1;
 				""";
 
 		try (PreparedStatement s = Server.getThreadDatabase().getConnection().prepareStatement(statement)){
-			s.setString(1, authKey);
+			s.setString(1, token);
 			ResultSet r = s.executeQuery();
 			if(r.next()){
 				return r.getBytes(1);
@@ -34,21 +34,21 @@ public class AuthKeyTable {
 		}
 	}
 
-	public static String createAndAddAuthKey(byte[] userId){
-		String newAuthKey = GeneralUtils.getSecureRandomString(64);
+	public static String createAndAddToken(byte[] userId){
+		String newToken = GeneralUtils.getSecureRandomString(64);
 		String statement =
 				"""
-				INSERT INTO `AuthKeys` (userId, authKey, expiry)
+				INSERT INTO `Tokens` (userId, token, expiry)
 				VALUES (?, ?, ?);
 				""";
 
 		try (PreparedStatement s = Server.getThreadDatabase().getConnection().prepareStatement(statement)){
 			s.setBytes(1, userId);
-			s.setString(2, newAuthKey);
-			s.setTimestamp(3, new Timestamp(System.currentTimeMillis() + TimeUnit.DAYS.toMillis(3)));
+			s.setString(2, newToken);
+			s.setTimestamp(3, new Timestamp(System.currentTimeMillis() + TimeUnit.DAYS.toMillis(30)));
 			s.executeUpdate();
 
-			return newAuthKey;
+			return newToken;
 		} catch (SQLException e){
 			throw new RuntimeException(e);
 		}
@@ -58,13 +58,12 @@ public class AuthKeyTable {
 		{
 			String statement =
 					"""
-						CREATE TABLE IF NOT EXISTS `AuthKeys` (
+						CREATE TABLE IF NOT EXISTS `Tokens` (
+						token CHAR(64) NOT NULL,
 						userId BINARY(16) NOT NULL,
-						authKey CHAR(64) NOT NULL,
 						expiry TIMESTAMP NOT NULL,
-						PRIMARY KEY (userId, authKey),
-						FOREIGN KEY (userId) REFERENCES Users(userId),
-						KEY (authKey)
+						PRIMARY KEY (token),
+						FOREIGN KEY (userId) REFERENCES Users(userId)
 						);
 							""";
 
@@ -78,11 +77,11 @@ public class AuthKeyTable {
 		{
 			String statement =
 				"""
-					CREATE EVENT IF NOT EXISTS `AuthKeyRemover`
+					CREATE EVENT IF NOT EXISTS `TokenRemover`
 						ON SCHEDULE EVERY 1 DAY
 						STARTS CURRENT_TIMESTAMP
 							DO
-								DELETE FROM chess.AuthKeys WHERE expiry < NOW();
+								DELETE FROM chess.Tokens WHERE expiry < NOW();
 					""";
 
 			try (PreparedStatement s = database.getConnection().prepareStatement(statement)) {

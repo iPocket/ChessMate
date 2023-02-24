@@ -6,7 +6,10 @@ import me.protoflicker.chessmate.connection.handler.HeartbeatHandler;
 import me.protoflicker.chessmate.console.Logger;
 import me.protoflicker.chessmate.data.Database;
 import me.protoflicker.chessmate.data.DatabaseContainer;
+import me.protoflicker.chessmate.manager.LoginManager;
 import me.protoflicker.chessmate.protocol.Packet;
+import me.protoflicker.chessmate.protocol.packet.ClientPacket;
+import me.protoflicker.chessmate.protocol.packet.ServerPacket;
 import me.protoflicker.chessmate.protocol.packet.connection.ConnectPacket;
 import me.protoflicker.chessmate.protocol.packet.connection.DisconnectPacket;
 import me.protoflicker.chessmate.protocol.packet.connection.PingPacket;
@@ -55,6 +58,7 @@ public class ClientThread extends Thread implements DatabaseContainer {
 
 
 	//This usage of Class<?> could raise a lot of potential bugs with ClassLoaders...
+	@Getter
 	private final Map<Class<?>, PacketHandler> packetHandlers = Collections.synchronizedMap(new HashMap<>());
 
 
@@ -126,6 +130,8 @@ public class ClientThread extends Thread implements DatabaseContainer {
 		packetHandlers.put(PingPacket.class, HeartbeatHandler::handlePing);
 		packetHandlers.put(PongPacket.class, HeartbeatHandler::handlePong);
 
+		LoginManager.registerHandlers(this);
+
 		packetHandlers.put(DisconnectPacket.class, (c, p) -> {
 			c.tryClose();
 		});
@@ -136,18 +142,18 @@ public class ClientThread extends Thread implements DatabaseContainer {
 		while(!isInterrupted() && (System.currentTimeMillis() - lastReceived) <= 60000){
 			try {
 				Object object = DataUtils.deserializeObjectFromStream(inputStream);
-				if(object instanceof Packet packet){
+				if(object instanceof Packet && object instanceof ClientPacket packet){
 					lastReceived = System.currentTimeMillis();
 					PacketHandler handler = packetHandlers.get(packet.getClass());
 					if(handler != null){
-						Logger.getInstance().log("Packet received: " + packet.getName(), Logger.LogLevel.DEBUG);
+						Logger.getInstance().log("Packet received: " + packet.getClass().getSimpleName(), Logger.LogLevel.DEBUG);
 						handler.handle(this, packet);
 					} else {
-						Logger.getInstance().log("Received unhandled packet: " + packet.getName(),
+						Logger.getInstance().log("Received unhandled packet: " + packet.getClass().getSimpleName(),
 								Logger.LogLevel.DEBUG);
 					}
 				} else {
-					Logger.getInstance().log("Received suspicious non-packet object", Logger.LogLevel.NOTICE);
+					Logger.getInstance().log("Received suspicious non-ClientPacket object", Logger.LogLevel.NOTICE);
 				}
 			} catch (ObjectStreamException e){
 //				Logger.getInstance().log("Received suspicious non-object bytes", Logger.LogLevel.NOTICE);
@@ -172,7 +178,7 @@ public class ClientThread extends Thread implements DatabaseContainer {
 	}
 
 
-	public synchronized void sendPacket(Packet packet){
+	public synchronized void sendPacket(ServerPacket packet){
 		if(outputStream != null){
 			try {
 //				System.out.println(new Gson().toJson(packet));
