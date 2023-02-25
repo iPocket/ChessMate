@@ -5,7 +5,6 @@ import lombok.Getter;
 
 import java.io.Serializable;
 import java.sql.Timestamp;
-import java.util.Objects;
 
 @Data
 public class PerformedChessMove implements Serializable, Cloneable {
@@ -30,10 +29,5 @@ public class PerformedChessMove implements Serializable, Cloneable {
 		} catch(CloneNotSupportedException e){
 			throw new AssertionError();
 		}
-	}
-
-	@Override
-	public int hashCode(){
-		return Objects.hash(timePlayed, move);
 	}
 }

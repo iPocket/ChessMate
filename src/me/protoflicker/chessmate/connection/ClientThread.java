@@ -24,7 +24,9 @@ import java.nio.channels.ClosedChannelException;
 import java.sql.SQLException;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class ClientThread extends Thread implements DatabaseContainer {
 
@@ -144,10 +146,14 @@ public class ClientThread extends Thread implements DatabaseContainer {
 				Object object = DataUtils.deserializeObjectFromStream(inputStream);
 				if(object instanceof Packet && object instanceof ClientPacket packet){
 					lastReceived = System.currentTimeMillis();
-					PacketHandler handler = packetHandlers.get(packet.getClass());
-					if(handler != null){
+					List<Map.Entry<Class<?>, PacketHandler>> handlers = packetHandlers.entrySet().stream()
+							.filter(e -> e.getKey().isInstance(object) || object.getClass().equals(e.getKey()))
+							.collect(Collectors.toList());
+					if(!handlers.isEmpty()){
 						Logger.getInstance().log("Packet received: " + packet.getClass().getSimpleName(), Logger.LogLevel.DEBUG);
-						handler.handle(this, packet);
+						for(Map.Entry<Class<?>, PacketHandler> entry : handlers){
+							entry.getValue().handle(this, packet);
+						}
 					} else {
 						Logger.getInstance().log("Received unhandled packet: " + packet.getClass().getSimpleName(),
 								Logger.LogLevel.DEBUG);

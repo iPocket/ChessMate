@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class ChessBoard implements Serializable, Cloneable {
 
@@ -209,7 +210,7 @@ public class ChessBoard implements Serializable, Cloneable {
 						&& performedMoves.stream().noneMatch(p ->  p.getMove().getPieceFrom().equals(loc)
 						|| p.getMove().getPieceTo().equals(loc))){
 					List<LocatableChessPiece> rooks = findPieces(PieceType.ROOK,
-							piece.getGameSide()).stream().filter(r -> r.getPosition().getRank() == loc.getRank()).toList();
+							piece.getGameSide()).stream().filter(r -> r.getPosition().getRank() == loc.getRank()).collect(Collectors.toList());
 
 					for(LocatableChessPiece rook : rooks){
 						if(performedMoves.stream().noneMatch(p -> p.getMove().getMoveType() == MoveType.CASTLE || p.getMove().getPieceFrom().equals(rook.getPosition()) ||

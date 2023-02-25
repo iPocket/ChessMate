@@ -98,7 +98,7 @@ public abstract class LoginManager {
 				}
 			}
 
-			nextAllowedToLogin.put(c, System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(10));
+			nextAllowedToLogin.put(c, System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(3));
 			c.sendPacket(new LoginUnsuccessfulPacket());
 		} else {
 			c.sendPacket(new LoginThrottledPacket());
@@ -180,8 +180,7 @@ public abstract class LoginManager {
 
 
 	public static void registerHandlers(ClientThread clientThread){
-		Map<Class<?>, PacketHandler> h = clientThread.getPacketHandlers();
-		h.putAll(packetHandlers);
+		clientThread.getPacketHandlers().putAll(packetHandlers);
 	}
 
 	public static void unregisterHandlers(ClientThread clientThread){
