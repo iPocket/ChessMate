@@ -51,13 +51,17 @@ public abstract class LoginManager {
 	}
 
 
-	private static void doSuccessfulLogin(ClientThread c, byte[] userId, boolean sendToken){
+	private static void doSuccessfulLogin(ClientThread c, byte[] userId, boolean sendToken, boolean register){
 		String token = null;
 		if(sendToken){
 			token = TokenTable.createAndAddToken(userId);
 		}
 
-		c.sendPacket(new LoginSuccessfulPacket(userId, token));
+		if(register){
+			c.sendPacket(new RegisterSuccessfulPacket(userId, token));
+		} else {
+			c.sendPacket(new LoginSuccessfulPacket(userId, token));
+		}
 
 		loggedIn.put(c, userId);
 		UserTable.updateLastLogin(userId);
@@ -92,8 +96,8 @@ public abstract class LoginManager {
 		if(time == null || System.currentTimeMillis() >= time){ //vulnerability: nullables could be exploited to just break things
 			byte[] userId = UserTable.getUserIdByUsername(p.getUsername());
 			if(userId != null){
-				if(isPasswordCorrect(userId, hashPassword(p.getPassword()))){
-					doSuccessfulLogin(c, userId, true);
+				if(isPasswordCorrect(userId, p.getPassword())){
+					doSuccessfulLogin(c, userId, true, false);
 					return;
 				}
 			}
@@ -116,7 +120,7 @@ public abstract class LoginManager {
 		if(time == null || System.currentTimeMillis() >= time){ //vulnerability: nullables could be exploited to just break things
 			byte[] userId = TokenTable.getUserIdByToken(p.getToken());
 			if(userId != null){
-				doSuccessfulLogin(c, userId, false);
+				doSuccessfulLogin(c, userId, false, false);
 				return;
 			}
 
@@ -151,7 +155,8 @@ public abstract class LoginManager {
 		}
 
 		UserTable.createUser(p.getUsername(), hashPassword(p.getPassword()), p.getBirthday(), AccountType.USER);
-		c.sendPacket(new RegisterSuccessfulPacket(p.getUsername()));
+
+		doSuccessfulLogin(c, UserTable.getUserIdByUsername(p.getUsername()), true, true);
 	}
 
 	public static void handleChangePassword(ClientThread c, ClientPacket packet){

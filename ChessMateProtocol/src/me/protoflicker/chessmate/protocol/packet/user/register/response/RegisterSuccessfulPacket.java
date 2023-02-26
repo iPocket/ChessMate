@@ -7,9 +7,13 @@ import me.protoflicker.chessmate.protocol.packet.ServerPacket;
 public class RegisterSuccessfulPacket extends Packet implements ServerPacket {
 
 	@Getter
-	private final String username;
+	private final byte[] userId;
 
-	public RegisterSuccessfulPacket(String username){
-		this.username = username;
+	@Getter
+	private final String token;
+
+	public RegisterSuccessfulPacket(byte[] userId, String token){
+		this.userId = userId;
+		this.token = token;
 	}
 }

@@ -200,8 +200,8 @@ public abstract class UserTable {
 				"""
 				CREATE TABLE IF NOT EXISTS `Users` (
 				userId BINARY(16) DEFAULT (UNHEX(REPLACE(UUID(), "-",""))) NOT NULL UNIQUE,
-				username VARCHAR(20) NOT NULL,
-				password BINARY(32) NOT NULL,
+				username VARCHAR(32) NOT NULL,
+				password CHAR(64) NOT NULL,
 				accountType TINYINT(1) UNSIGNED DEFAULT 0 NOT NULL,
 				birthday DATE NOT NULL,
 				lastLogin TIMESTAMP DEFAULT (NOW()) NOT NULL,
