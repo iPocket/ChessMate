@@ -5,16 +5,16 @@ import me.protoflicker.chessmate.chess.RunningGame;
 import me.protoflicker.chessmate.connection.ClientThread;
 import me.protoflicker.chessmate.connection.PacketHandler;
 import me.protoflicker.chessmate.data.DataManager;
-import me.protoflicker.chessmate.data.table.GameTable;
 import me.protoflicker.chessmate.protocol.chess.enums.GameInfo;
 import me.protoflicker.chessmate.protocol.chess.enums.GameStatus;
 import me.protoflicker.chessmate.protocol.packet.ClientPacket;
-import me.protoflicker.chessmate.protocol.packet.connection.DisconnectPacket;
 import me.protoflicker.chessmate.protocol.packet.game.request.GameDrawDeclinePacket;
 import me.protoflicker.chessmate.protocol.packet.game.request.GameMoveRequestPacket;
 import me.protoflicker.chessmate.protocol.packet.game.request.GameRequestPacket;
 import me.protoflicker.chessmate.protocol.packet.game.request.GameTimingsRequestPacket;
-import me.protoflicker.chessmate.protocol.packet.game.update.*;
+import me.protoflicker.chessmate.protocol.packet.game.update.GameNoLongerRunningPacket;
+import me.protoflicker.chessmate.protocol.packet.game.update.GameNotFoundPacket;
+import me.protoflicker.chessmate.protocol.packet.game.update.GameResponsePacket;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -81,7 +81,7 @@ public class GameManager {
 
 
 
-	public static void handleDisconnect(ClientThread c, ClientPacket packet){
+	public static void onDisconnect(ClientThread c){
 		for(RunningGame game : runningGames.values()){
 			removeClientFromGame(c, game);
 		}

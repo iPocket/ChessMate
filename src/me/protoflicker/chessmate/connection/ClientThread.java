@@ -7,6 +7,8 @@ import me.protoflicker.chessmate.console.Logger;
 import me.protoflicker.chessmate.data.Database;
 import me.protoflicker.chessmate.data.DatabaseContainer;
 import me.protoflicker.chessmate.manager.GameManager;
+import me.protoflicker.chessmate.manager.IntelManager;
+import me.protoflicker.chessmate.manager.InvitationManager;
 import me.protoflicker.chessmate.manager.LoginManager;
 import me.protoflicker.chessmate.protocol.Packet;
 import me.protoflicker.chessmate.protocol.packet.ClientPacket;
@@ -15,6 +17,8 @@ import me.protoflicker.chessmate.protocol.packet.connection.ConnectPacket;
 import me.protoflicker.chessmate.protocol.packet.connection.DisconnectPacket;
 import me.protoflicker.chessmate.protocol.packet.connection.PingPacket;
 import me.protoflicker.chessmate.protocol.packet.connection.PongPacket;
+import me.protoflicker.chessmate.protocol.packet.connection.response.ConnectionSuccessfulPacket;
+import me.protoflicker.chessmate.protocol.packet.connection.response.IncompatibleProtocolPacket;
 import me.protoflicker.chessmate.util.DataUtils;
 
 import java.io.*;
@@ -99,17 +103,26 @@ public class ClientThread extends Thread implements DatabaseContainer {
 		}
 
 
-		packetHandlers.put(ConnectPacket.class, (c, p) -> {
-			if(connectToDatabase()){
-				Logger.getInstance().log("Successfully accepted connection from " + getClientName());
+		packetHandlers.put(ConnectPacket.class, (c, packet) -> {
+			ConnectPacket p = (ConnectPacket) packet;
+			if(p.isCompatible()){
+				if(c.connectToDatabase()){
+					Logger.getInstance().log("Successfully accepted connection from " + getClientName());
 
-				initBaseHandlers();
+					c.initBaseHandlers();
 
-				isProtocolCompliant = true;
-				packetHandlers.remove(ConnectPacket.class);
+					isProtocolCompliant = true;
+					packetHandlers.remove(ConnectPacket.class);
+
+					c.sendPacket(new ConnectionSuccessfulPacket());
+					return;
+				}
 			} else {
-				tryClose();
+				Logger.getInstance().log("Rejecting connection from " + getClientName() + " due to incompatible protocol");
+				c.sendPacket(new IncompatibleProtocolPacket(ConnectPacket.PROTOCOL_VERSION));
 			}
+
+			c.tryClose();
 		});
 
 
@@ -135,6 +148,8 @@ public class ClientThread extends Thread implements DatabaseContainer {
 
 		LoginManager.registerHandlers(this);
 		GameManager.registerHandlers(this);
+		InvitationManager.registerHandlers(this);
+		IntelManager.registerHandlers(this);
 
 		packetHandlers.put(DisconnectPacket.class, (c, p) -> {
 			c.tryClose();
@@ -212,10 +227,7 @@ public class ClientThread extends Thread implements DatabaseContainer {
 	public void close(){
 		Server.getInstance().removeClientThread(this);
 
-		PacketHandler disconnect = packetHandlers.get(DisconnectPacket.class);
-		if(disconnect != null){
-			disconnect.handle(this, new DisconnectPacket()); //there can only be one, not worth refractoring in project scope
-		}
+		onDisconnect();
 
 		Logger.getInstance().log("Disconnecting " + getClientName(), Logger.LogLevel.NOTICE);
 		try {
@@ -224,5 +236,9 @@ public class ClientThread extends Thread implements DatabaseContainer {
 		} catch (IOException ignored){
 
 		}
+	}
+
+	private void onDisconnect(){
+		GameManager.onDisconnect(this);
 	}
 }

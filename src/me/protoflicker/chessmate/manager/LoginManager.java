@@ -20,10 +20,7 @@ import me.protoflicker.chessmate.protocol.packet.user.setting.response.UserPassw
 import me.protoflicker.chessmate.protocol.packet.user.setting.response.UserPasswordChangeUnsuccessfulPacket;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.WeakHashMap;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 public abstract class LoginManager {
@@ -50,9 +47,9 @@ public abstract class LoginManager {
 		}
 
 		if(register){
-			c.sendPacket(new RegisterSuccessfulPacket(userId, token));
+			c.sendPacket(new RegisterSuccessfulPacket(userId, UserTable.getUserInfo(userId), token));
 		} else {
-			c.sendPacket(new LoginSuccessfulPacket(userId, token));
+			c.sendPacket(new LoginSuccessfulPacket(userId, UserTable.getUserInfo(userId), token));
 		}
 
 		loggedIn.put(c, userId);
@@ -65,7 +62,18 @@ public abstract class LoginManager {
 	}
 
 	public static boolean isAuthorised(ClientThread c, byte[] userId){
-		return loggedIn.get(c) == userId;
+		return getUserId(c) == userId;
+	}
+
+	public static Set<ClientThread> getClientsById(byte[] userId){
+		Set<ClientThread> clients = new HashSet<>();
+		for(Map.Entry<ClientThread, byte[]> entry : loggedIn.entrySet()){
+			if(userId == entry.getValue()){
+				clients.add(entry.getKey());
+			}
+		}
+
+		return clients;
 	}
 
 	public static boolean isUsernameValid(String username){

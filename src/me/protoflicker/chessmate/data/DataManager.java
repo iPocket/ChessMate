@@ -21,7 +21,8 @@ public class DataManager {
 	@Getter
 	private final String port;
 
-	private final String database;
+	@Getter
+	private final String databaseName;
 
 	private final String username;
 
@@ -29,16 +30,16 @@ public class DataManager {
 
 	private Connection connection;
 
-	public DataManager(String ip, String port, String database, String username, String password){
+	public DataManager(String ip, String port, String databaseName, String username, String password){
 		this.ip = ip;
 		this.port = port;
-		this.database = database;
+		this.databaseName = databaseName;
 		this.username = username;
 		this.password = password;
 	}
 
 	public Database getNewDatabase(){
-		return new SQLDatabase(ip, port, database, username, password);
+		return new SQLDatabase(ip, port, databaseName, username, password);
 	}
 
 	public static GameInfo getFullGame(byte[] gameId){

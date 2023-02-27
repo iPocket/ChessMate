@@ -59,11 +59,11 @@ public class TokenTable {
 			String statement =
 					"""
 						CREATE TABLE IF NOT EXISTS `Tokens` (
-						token CHAR(64) NOT NULL,
+						token CHAR(64) NOT NULL UNIQUE,
 						userId BINARY(16) NOT NULL,
 						expiry TIMESTAMP NOT NULL,
 						PRIMARY KEY (token),
-						FOREIGN KEY (userId) REFERENCES Users(userId)
+						FOREIGN KEY (userId) REFERENCES Users(userId) ON DELETE CASCADE
 						);
 							""";
 
@@ -81,8 +81,8 @@ public class TokenTable {
 						ON SCHEDULE EVERY 1 DAY
 						STARTS CURRENT_TIMESTAMP
 							DO
-								DELETE FROM chess.Tokens WHERE expiry < NOW();
-					""";
+								DELETE FROM %MedicBag%.Tokens WHERE expiry < NOW();
+					""".replace("%MedicBag%", Server.getInstance().getDataManager().getDatabaseName());
 
 			try (PreparedStatement s = database.getConnection().prepareStatement(statement)) {
 				s.executeUpdate();

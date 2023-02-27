@@ -3,6 +3,7 @@ package me.protoflicker.chessmate.data.table;
 import me.protoflicker.chessmate.Server;
 import me.protoflicker.chessmate.data.Database;
 import me.protoflicker.chessmate.protocol.chess.enums.AccountType;
+import me.protoflicker.chessmate.protocol.packet.user.UserInfo;
 
 import java.sql.*;
 
@@ -151,6 +152,29 @@ public abstract class UserTable {
 			ResultSet r = s.executeQuery();
 			if(r.next()){
 				return r.getTimestamp(1);
+			} else {
+				return null;
+			}
+		} catch (SQLException e){
+			throw new RuntimeException(e);
+		}
+	}
+
+	public static UserInfo getUserInfo(byte[] userId){
+		String statement =
+				"""
+				SELECT username,birthday,accountType,lastLogin
+				FROM `Users`
+				WHERE userId = ?
+				LIMIT 1;
+				""";
+
+		try (PreparedStatement s = Server.getThreadDatabase().getConnection().prepareStatement(statement)){
+			s.setBytes(1, userId);
+			ResultSet r = s.executeQuery();
+			if(r.next()){
+				return new UserInfo(userId, r.getString("username"), r.getDate("birthday"),
+						AccountType.getByCode(r.getInt("accountType")), r.getTimestamp("lastLogin"));
 			} else {
 				return null;
 			}
