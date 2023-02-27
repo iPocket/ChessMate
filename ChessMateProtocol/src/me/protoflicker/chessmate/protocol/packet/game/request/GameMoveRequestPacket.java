@@ -1,4 +1,4 @@
-package me.protoflicker.chessmate.protocol.packet.game.move;
+package me.protoflicker.chessmate.protocol.packet.game.request;
 
 import lombok.Getter;
 import me.protoflicker.chessmate.protocol.chess.ChessMove;

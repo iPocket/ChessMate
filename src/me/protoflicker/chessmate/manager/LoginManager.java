@@ -32,12 +32,6 @@ public abstract class LoginManager {
 
 	private static final String SALT = "medicbag";
 
-	private static final Map<Class<?>, PacketHandler> packetHandlers = new HashMap<>();
-
-	static {
-		initHandlers();
-	}
-
 	private static final Map<ClientThread, Long> nextAllowedToLogin = Collections.synchronizedMap(new WeakHashMap<>());
 
 	private static final Map<ClientThread, byte[]> loggedIn = Collections.synchronizedMap(new WeakHashMap<>());
@@ -183,6 +177,12 @@ public abstract class LoginManager {
 	}
 
 
+
+	private static final Map<Class<?>, PacketHandler> packetHandlers = new HashMap<>();
+
+	static {
+		initHandlers();
+	}
 
 	public static void registerHandlers(ClientThread clientThread){
 		clientThread.getPacketHandlers().putAll(packetHandlers);
