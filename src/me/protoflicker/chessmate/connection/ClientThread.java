@@ -6,6 +6,7 @@ import me.protoflicker.chessmate.connection.handler.HeartbeatHandler;
 import me.protoflicker.chessmate.console.Logger;
 import me.protoflicker.chessmate.data.Database;
 import me.protoflicker.chessmate.data.DatabaseContainer;
+import me.protoflicker.chessmate.manager.GameManager;
 import me.protoflicker.chessmate.manager.LoginManager;
 import me.protoflicker.chessmate.protocol.Packet;
 import me.protoflicker.chessmate.protocol.packet.ClientPacket;
@@ -133,6 +134,7 @@ public class ClientThread extends Thread implements DatabaseContainer {
 		packetHandlers.put(PongPacket.class, HeartbeatHandler::handlePong);
 
 		LoginManager.registerHandlers(this);
+		GameManager.registerHandlers(this);
 
 		packetHandlers.put(DisconnectPacket.class, (c, p) -> {
 			c.tryClose();
@@ -146,9 +148,7 @@ public class ClientThread extends Thread implements DatabaseContainer {
 				Object object = DataUtils.deserializeObjectFromStream(inputStream);
 				if(object instanceof Packet && object instanceof ClientPacket packet){
 					lastReceived = System.currentTimeMillis();
-					List<Map.Entry<Class<?>, PacketHandler>> handlers = packetHandlers.entrySet().stream()
-							.filter(e -> e.getKey().isInstance(object) || object.getClass().equals(e.getKey()))
-							.collect(Collectors.toList());
+					List<Map.Entry<Class<?>, PacketHandler>> handlers = getHandlersByPacket(packet);
 					if(!handlers.isEmpty()){
 						Logger.getInstance().log("Packet received: " + packet.getClass().getSimpleName(), Logger.LogLevel.DEBUG);
 						for(Map.Entry<Class<?>, PacketHandler> entry : handlers){
@@ -183,6 +183,12 @@ public class ClientThread extends Thread implements DatabaseContainer {
 		isOnCycle = false;
 	}
 
+	private List<Map.Entry<Class<?>, PacketHandler>> getHandlersByPacket(ClientPacket object){
+		return packetHandlers.entrySet().stream()
+				.filter(e -> e.getKey().isInstance(object) || object.getClass().equals(e.getKey()))
+				.collect(Collectors.toList());
+	}
+
 
 	public synchronized void sendPacket(ServerPacket packet){
 		if(outputStream != null){
@@ -205,6 +211,11 @@ public class ClientThread extends Thread implements DatabaseContainer {
 
 	public void close(){
 		Server.getInstance().removeClientThread(this);
+
+		PacketHandler disconnect = packetHandlers.get(DisconnectPacket.class);
+		if(disconnect != null){
+			disconnect.handle(this, new DisconnectPacket()); //there can only be one, not worth refractoring in project scope
+		}
 
 		Logger.getInstance().log("Disconnecting " + getClientName(), Logger.LogLevel.NOTICE);
 		try {

@@ -4,6 +4,7 @@ import lombok.Getter;
 import me.protoflicker.chessmate.connection.ClientThread;
 import me.protoflicker.chessmate.data.table.GameTable;
 import me.protoflicker.chessmate.data.table.MovesTable;
+import me.protoflicker.chessmate.manager.GameManager;
 import me.protoflicker.chessmate.manager.LoginManager;
 import me.protoflicker.chessmate.protocol.chess.ChessMove;
 import me.protoflicker.chessmate.protocol.chess.PerformedChessMove;
@@ -72,17 +73,16 @@ public class RunningGame {
 	}
 
 	public void requestDraw(ClientThread c, GameSide side){
-		synchronized(locker){
-			if(isAuthorised(c, side)){
-				Integer otherLast = drawRequestAtMove.getOrDefault(side.getOpposite(), 0);
-				if(info.getBoard().getNumberOfPerformedMoves() == otherLast){
-					info.getBoard().performMove(new ChessMove(MoveType.DRAW_AGREEMENT, null, null, null, null),
-							new Timestamp(System.currentTimeMillis()));
-					updateGameStatus();
-				} else {
-					drawRequestAtMove.put(side, info.getBoard().getNumberOfPerformedMoves());
-					broadcastPacket(new GameDrawOfferPacket(info.getGameId(), side), List.of(c));
-				}
+		//already in sync
+		if(isAuthorised(c, side)){
+			Integer otherLast = drawRequestAtMove.getOrDefault(side.getOpposite(), 0);
+			if(info.getBoard().getNumberOfPerformedMoves() == otherLast){
+				info.getBoard().performMove(new ChessMove(MoveType.DRAW_AGREEMENT, null, null, null, null),
+						new Timestamp(System.currentTimeMillis()));
+				updateGameStatus();
+			} else {
+				drawRequestAtMove.put(side, info.getBoard().getNumberOfPerformedMoves());
+				broadcastPacket(new GameDrawOfferPacket(info.getGameId(), side), List.of(c));
 			}
 		}
 	}
@@ -98,10 +98,13 @@ public class RunningGame {
 		}
 	}
 
+
+
 	private void updateGameStatus(){
 		if(info.getBoard().getGameStatus() != GameStatus.ONGOING){
 			broadcastPacket(new GameStatusUpdatePacket(info.getGameId(), info.getBoard().getGameStatus()));
 			GameTable.setGameStatus(info.getGameId(), info.getBoard().getGameStatus());
+			GameManager.unloadGameAndKick(this);
 		}
 	}
 
@@ -130,10 +133,10 @@ public class RunningGame {
 	}
 
 	private boolean isAuthorised(ClientThread c, GameSide side){
-		return info.getId(side) == LoginManager.getUserId(c);
+		return info.isAuthorised(LoginManager.getUserId(c), side);
 	}
 
 	private boolean isParticipant(ClientThread c){
-		return info.getBlackId() == LoginManager.getUserId(c) || info.getWhiteId() == LoginManager.getUserId(c);
+		return info.isParticipant(LoginManager.getUserId(c));
 	}
 }

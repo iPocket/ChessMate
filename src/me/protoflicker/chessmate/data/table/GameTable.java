@@ -2,7 +2,9 @@ package me.protoflicker.chessmate.data.table;
 
 import me.protoflicker.chessmate.Server;
 import me.protoflicker.chessmate.data.Database;
+import me.protoflicker.chessmate.protocol.chess.ChessBoard;
 import me.protoflicker.chessmate.protocol.chess.ChessUtils;
+import me.protoflicker.chessmate.protocol.chess.enums.GameInfo;
 import me.protoflicker.chessmate.protocol.chess.enums.GameStatus;
 
 import java.sql.PreparedStatement;
@@ -163,7 +165,42 @@ public final class GameTable {
 		}
 	}
 
-
+//	public static GameInfo getGameInfo(byte[] gameId){
+//		String statement =
+//				"""
+//				SELECT gameName,startTime,startingBoard,timeConstraint,timeIncrement,status
+//				FROM `Games`
+//				WHERE gameId = ?
+//				LIMIT 1;
+//				""";
+//
+//		try (PreparedStatement s = Server.getThreadDatabase().getConnection().prepareStatement(statement)){
+//			s.setBytes(1, gameId);
+//			ResultSet r = s.executeQuery();
+//			if(r.next()){
+//				return toGameInfo(
+//						gameId,
+//						r.getString("gameName"),
+//						r.getTimestamp("startTime"),
+//						r.getString("startingBoard"),
+//						r.getInt("timeConstraint"),
+//						r.getInt("timeIncrement"),
+//						r.getInt("status")
+//				);
+//			} else {
+//				return null;
+//			}
+//		} catch (SQLException e){
+//			throw new RuntimeException(e);
+//		}
+//	}
+//
+//	private static GameInfo toGameInfo(byte[] gameId, String gameName, Timestamp startTime,
+//									   String startingBoard, int timeConstraint, int timeIncrement, int status){
+//		ChessBoard board = new ChessBoard(ChessUtils.stringToBoard(startingBoard), startTime, timeConstraint, timeIncrement);
+//		board.initMoves(MovesTable.getAllMoves(gameId)); //unfinished
+//		return null;
+//	}
 
 
 	public static void createTable(Database database){

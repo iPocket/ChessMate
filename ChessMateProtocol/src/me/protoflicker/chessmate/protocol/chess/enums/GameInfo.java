@@ -33,4 +33,12 @@ public class GameInfo implements Serializable {
 	public byte[] getId(GameSide side){
 		return side == GameSide.WHITE ? whiteId : blackId;
 	}
+
+	public boolean isAuthorised(byte[] userId, GameSide side){
+		return getId(side) == userId;
+	}
+
+	public boolean isParticipant(byte[] userId){
+		return blackId == userId || whiteId == userId;
+	}
 }

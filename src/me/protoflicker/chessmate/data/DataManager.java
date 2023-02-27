@@ -53,7 +53,7 @@ public class DataManager {
 		{
 			String statement =
 					"""
-							SELECT gameName,startTime,startingBoard,timeConstraint,timeIncrement,status,
+							SELECT gameName,startTime,startingBoard,timeConstraint,timeIncrement,status
 							FROM `Games`
 							WHERE gameId = ?
 							LIMIT 1;
@@ -81,7 +81,7 @@ public class DataManager {
 		{
 			String statement =
 					"""
-							SELECT userId,gameSide,
+							SELECT userId,gameSide
 							FROM `Participations`
 							WHERE gameId = ?
 							LIMIT 1;

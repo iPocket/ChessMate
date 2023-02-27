@@ -13,13 +13,11 @@ import me.protoflicker.chessmate.protocol.packet.user.login.response.LoginSucces
 import me.protoflicker.chessmate.protocol.packet.user.login.response.LoginThrottledPacket;
 import me.protoflicker.chessmate.protocol.packet.user.login.response.LoginUnsuccessfulPacket;
 import me.protoflicker.chessmate.protocol.packet.user.register.RegisterPacket;
-import me.protoflicker.chessmate.protocol.packet.user.register.response.RegisterBadNamePacket;
-import me.protoflicker.chessmate.protocol.packet.user.register.response.RegisterBadPasswordPacket;
-import me.protoflicker.chessmate.protocol.packet.user.register.response.RegisterNameTakenPacket;
-import me.protoflicker.chessmate.protocol.packet.user.register.response.RegisterSuccessfulPacket;
+import me.protoflicker.chessmate.protocol.packet.user.register.response.*;
 import me.protoflicker.chessmate.protocol.packet.user.setting.UserPasswordChangePacket;
 import me.protoflicker.chessmate.protocol.packet.user.setting.response.UserPasswordChangeBadPasswordPacket;
 import me.protoflicker.chessmate.protocol.packet.user.setting.response.UserPasswordChangeSuccessfulPacket;
+import me.protoflicker.chessmate.protocol.packet.user.setting.response.UserPasswordChangeUnsuccessfulPacket;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
@@ -71,11 +69,11 @@ public abstract class LoginManager {
 	}
 
 	public static boolean isUsernameValid(String username){
-		return username.length() <= 32 && username.length() >= 2;
+		return username != null && username.length() <= 32 && username.length() >= 2;
 	}
 
 	public static boolean isPasswordValid(String password){
-		return password.length() >= 8;
+		return password != null && password.length() >= 8;
 	}
 	
 	
@@ -83,6 +81,11 @@ public abstract class LoginManager {
 		LoginByPasswordPacket p = (LoginByPasswordPacket) packet;
 		
 		if(loggedIn.containsKey(c)){
+			return;
+		}
+
+		if(p.getUsername() == null || p.getPassword() == null){
+			c.sendPacket(new LoginUnsuccessfulPacket());
 			return;
 		}
 		
@@ -109,6 +112,11 @@ public abstract class LoginManager {
 		if(loggedIn.containsKey(c)){
 			return;
 		}
+
+		if(p.getToken() == null){
+			c.sendPacket(new LoginUnsuccessfulPacket());
+			return;
+		}
 		
 		Long time = nextAllowedToLogin.get(c);
 		if(time == null || System.currentTimeMillis() >= time){ //vulnerability: nullables could be exploited to just break things
@@ -130,6 +138,11 @@ public abstract class LoginManager {
 		RegisterPacket p = (RegisterPacket) packet;
 
 		if(loggedIn.containsKey(c)){
+			return;
+		}
+
+		if(p.getBirthday() == null){
+			c.sendPacket(new RegisterUnsuccessfulPacket());
 			return;
 		}
 		
@@ -159,6 +172,10 @@ public abstract class LoginManager {
 		byte[] userId = loggedIn.get(c);
 		if(userId == null){
 			return;
+		}
+
+		if(p.getNewPassword() == null || p.getOldPassword() == null){
+			c.sendPacket(new UserPasswordChangeUnsuccessfulPacket());
 		}
 		
 		if(!isPasswordValid(p.getNewPassword())){
