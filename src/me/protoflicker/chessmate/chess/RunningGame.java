@@ -36,30 +36,28 @@ public class RunningGame {
 		this.info = info;
 	}
 
-	public void checkTimings(){
-		synchronized(locker){ //potentially rate limit this
-			if(info.getBoard().getGameStatus() == GameStatus.ONGOING){
-				info.getBoard().updateTimingStatus();
-
-				if(info.getBoard().getGameStatus() != GameStatus.ONGOING){
-					updateGameStatus();
-				}
-			}
+	public boolean checkTimings(){
+		if(info.getBoard().getGameStatus() == GameStatus.ONGOING){
+			info.getBoard().updateTimingStatus();
+			updateGameStatus();
+			return info.getBoard().getGameStatus() == GameStatus.ONGOING;
+		} else {
+			return false;
 		}
 	}
 
 	public void tryMove(ClientThread c, ChessMove move){
 		synchronized(locker){
-			if(isAuthorised(c, move.getGameSide())){
+			if(isAuthorised(c, move.getGameSide()) && checkTimings()){
 				if(move.getMoveType() != MoveType.DRAW_AGREEMENT){
 					if(info.getBoard().isValid(move)){
 						info.getBoard().performMove(move, new Timestamp(System.currentTimeMillis()));
 
 						broadcastPacket(new GameMoveUpdatePacket(info.getGameId(), info.getBoard().getLastPerformedMove()), List.of(c));
 
-						updateGameStatus();
-
 						addMoveToTable(info.getBoard().getLastPerformedMove());
+
+						updateGameStatus();
 					} else {
 						c.sendPacket(new GameMoveInvalidPacket(info.getGameId(), move));
 					}
@@ -74,7 +72,7 @@ public class RunningGame {
 
 	public void requestDraw(ClientThread c, GameSide side){
 		//already in sync
-		if(isAuthorised(c, side)){
+		if(isAuthorised(c, side) && checkTimings()){
 			Integer otherLast = drawRequestAtMove.getOrDefault(side.getOpposite(), 0);
 			if(info.getBoard().getNumberOfPerformedMoves() == otherLast){
 				info.getBoard().performMove(new ChessMove(MoveType.DRAW_AGREEMENT, null, null, null, null),
@@ -98,7 +96,11 @@ public class RunningGame {
 		}
 	}
 
-
+	public void tryTimingCheck(){
+		synchronized(locker){
+			checkTimings();
+		}
+	}
 
 	private void updateGameStatus(){
 		if(info.getBoard().getGameStatus() != GameStatus.ONGOING){

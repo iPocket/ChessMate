@@ -61,7 +61,7 @@ public class ChessBoard implements Serializable, Cloneable {
 		this.timeIncrement = timeIncrement;
 		if(timeConstraint > 0){
 			for(GameSide side : GameSide.values()){
-				timeRemaining.put(side, timeConstraint);
+				timeRemaining.put(side, timeConstraint * 1000);
 			}
 		}
 	}
@@ -431,8 +431,8 @@ public class ChessBoard implements Serializable, Cloneable {
 	public void performMove(ChessMove move, Timestamp time){
 		doMove(move);
 		performedMoves.add(new PerformedChessMove(time, move));
-		if(move.getMoveType().isPieceMove()){
-			removeTime(move.getGameSide(), getTimeTakenForLastMove() - timeIncrement - 500);
+		if(!isDummy && move.getMoveType().isPieceMove()){
+			removeTime(move.getGameSide(), getTimeTakenForLastMove() - timeIncrement*1000 - 500);
 		}
 		updateGameStatus();
 	}
@@ -599,7 +599,9 @@ public class ChessBoard implements Serializable, Cloneable {
 	public void undoLastMove(){
 		PerformedChessMove last = getLastPerformedMove();
 		undoMove(last.getMove());
-		addTime(last.getMove().getGameSide(), getTimeTakenForLastMove() - timeIncrement - 500);
+		if(!isDummy && last.getMove().getMoveType().isPieceMove()){
+			addTime(last.getMove().getGameSide(), getTimeTakenForLastMove() - timeIncrement*1000 - 500);
+		}
 		performedMoves.remove(last);
 	}
 
@@ -679,18 +681,16 @@ public class ChessBoard implements Serializable, Cloneable {
 		return false;
 	}
 
-	public boolean isDrawByInsufficientMaterial(){
-		int insufficient = 0;
-		for(GameSide side : GameSide.values()){
-			List<ChessPiece> pieces = findRawPieces(side);
-			if(pieces.size() == 1
-					|| (pieces.size() == 2 && (pieces.contains(new ChessPiece(PieceType.KNIGHT, side))
-						|| pieces.contains(new ChessPiece(PieceType.BISHOP, side))))){ //lone king, lone king + knight/bishop
-				insufficient++;
-			}
-		}
+	public boolean isInsufficientMaterial(GameSide side){
+		List<ChessPiece> pieces = findRawPieces(side);
+		//lone king, lone king + knight/bishop
+		return pieces.size() == 1
+				|| (pieces.size() == 2 && (pieces.contains(new ChessPiece(PieceType.KNIGHT, side))
+				|| pieces.contains(new ChessPiece(PieceType.BISHOP, side))));
+	}
 
-		return insufficient == 2;
+	public boolean isDrawByInsufficientMaterial(){
+		return isInsufficientMaterial(GameSide.WHITE) && isInsufficientMaterial(GameSide.BLACK);
 	}
 
 	public long getTimeTakenForLastMove(){
@@ -702,12 +702,25 @@ public class ChessBoard implements Serializable, Cloneable {
 		}
 	}
 
+	public long getTimeOfLastMove(){
+		if(performedMoves.size() == 0){
+			return startingTime.getTime();
+		} else {
+			return getLastPerformedMove().getTimePlayed().getTime();
+		}
+	}
+
 	public GameSide getCurrentTurn(){
 		return performedMoves.size() % 2 == 0 ? GameSide.WHITE : GameSide.BLACK;
 	}
 
 	private void updateGameStatus(){
 		if(!isDummy && gameStatus == GameStatus.ONGOING){
+			updateTimingStatus();
+			if(gameStatus != GameStatus.ONGOING){
+				return;
+			}
+
 			GameSide turn = getCurrentTurn();
 			if(!hasLegalMoves(turn)){
 				if(isKingUnderThreat(turn)){
@@ -718,8 +731,6 @@ public class ChessBoard implements Serializable, Cloneable {
 			} else if(isDrawByInsufficientMaterial()){
 				setGameStatus(GameStatus.DRAW_BY_INSUFFICIENT_MATERIAL);
 			}
-
-			updateTimingStatus();
 		}
 	}
 
@@ -727,11 +738,27 @@ public class ChessBoard implements Serializable, Cloneable {
 		GameSide turn = getCurrentTurn();
 
 		if(!timeRemaining.isEmpty()){
-			if(timeRemaining.get(turn.getOpposite()) <= 0){
-				setGameStatus(turn.getOpposite() == GameSide.WHITE ? GameStatus.BLACK_WIN_TIMEOUT : GameStatus.WHITE_WIN_TIMEOUT);
-			} else if(timeRemaining.get(turn) <= 0){
-				setGameStatus(turn == GameSide.WHITE ? GameStatus.BLACK_WIN_TIMEOUT : GameStatus.WHITE_WIN_TIMEOUT);
+			Long current = timeRemaining.get(turn);
+			Long opponent = timeRemaining.get(turn.getOpposite());
+			if(opponent <= 0){
+				timeout(turn.getOpposite());
+				return;
+			} else if(current <= 0){
+				timeout(turn);
+				return;
 			}
+
+			if(getTimeOfLastMove() + current <= System.currentTimeMillis()){
+				timeout(turn);
+			}
+		}
+	}
+
+	private void timeout(GameSide side){
+		if(isInsufficientMaterial(side.getOpposite())){
+			setGameStatus(GameStatus.DRAW_BY_INSUFFICIENT_VS_TIMING);
+		} else {
+			setGameStatus(side == GameSide.WHITE ? GameStatus.BLACK_WIN_TIMEOUT : GameStatus.WHITE_WIN_TIMEOUT);
 		}
 	}
 
@@ -743,7 +770,7 @@ public class ChessBoard implements Serializable, Cloneable {
 
 	public void removeTime(GameSide side, long time){
 		if(!timeRemaining.isEmpty()){
-			timeRemaining.replace(side, timeRemaining.get(side) + time);
+			timeRemaining.replace(side, timeRemaining.get(side) - time);
 		}
 	}
 

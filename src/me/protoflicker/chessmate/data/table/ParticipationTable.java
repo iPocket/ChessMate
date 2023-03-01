@@ -147,29 +147,41 @@ public final class ParticipationTable {
 		}
 	}
 
-//	public static List<byte[]> getOngoingGameIdsByUser(byte[] userId){
-//		List<byte[]> gameIds = new ArrayList<>();
-//
-//		String statement =
-//				"""
-//				SELECT gameId
-//				FROM `Participations`
-//				WHERE userId = ? AND result = 2;
-//				""";
-//
-//		try (PreparedStatement s = Server.getThreadDatabase().getConnection().prepareStatement(statement)){
-//			s.setBytes(1, userId);
-//			ResultSet r = s.executeQuery();
-//			while(r.next()){
-//				gameIds.add(r.getBytes(1));
-//			}
-//			r.close();
-//
-//			return gameIds;
-//		} catch (SQLException e){
-//			throw new RuntimeException(e);
-//		}
-//	}
+	public static void createParticipation(byte[] gameId, byte[] whiteId, byte[] blackId){
+		{
+			String statement =
+					"""
+							INSERT INTO `Participations` (userId, gameId, gameSide)
+							VALUES (?, ?, ?);
+							""";
+
+			try (PreparedStatement s = Server.getThreadDatabase().getConnection().prepareStatement(statement)) {
+				s.setBytes(1, whiteId);
+				s.setBytes(2, gameId);
+				s.setInt(3, GameSide.WHITE.getCode());
+				s.executeUpdate();
+			} catch(SQLException e){
+				throw new RuntimeException(e);
+			}
+		}
+
+		{
+			String statement =
+					"""
+							INSERT INTO `Participations` (userId, gameId, gameSide)
+							VALUES (?, ?, ?);
+							""";
+
+			try (PreparedStatement s = Server.getThreadDatabase().getConnection().prepareStatement(statement)) {
+				s.setBytes(1, blackId);
+				s.setBytes(2, gameId);
+				s.setInt(3, GameSide.BLACK.getCode());
+				s.executeUpdate();
+			} catch(SQLException e){
+				throw new RuntimeException(e);
+			}
+		}
+	}
 
 	public static void createTable(Database database){
 		String statement =

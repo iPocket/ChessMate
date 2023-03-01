@@ -1,38 +1,35 @@
 package me.protoflicker.chessmate.protocol.packet.game.invitation;
 
 import lombok.Getter;
+import lombok.Setter;
 import me.protoflicker.chessmate.protocol.chess.enums.GameSide;
+import me.protoflicker.chessmate.protocol.chess.enums.SimpleGameInfo;
 
 import java.io.Serializable;
 
-public class GameInvitation implements Serializable {
+public final class GameInvitation implements Serializable {
 
 	@Getter
-	private final byte[] inviterId;
-
-	@Getter
-	private final byte[] inviteeId;
-
-	@Getter
-	private final String startingBoard;
-
-	@Getter
-	private final int timeConstraint;
-
-	@Getter
-	private final int timeIncrement;
+	@Setter
+	private byte[] invitationId;
 
 	@Getter
 	private final GameSide inviterSide;
 
-	public GameInvitation(byte[] inviterId, byte[] inviteeId, String startingBoard, int timeConstraint, int timeIncrement,
-						  GameSide inviterSide){
+	@Getter
+	private final SimpleGameInfo info;
 
-		this.inviterId = inviterId;
-		this.inviteeId = inviteeId;
-		this.startingBoard = startingBoard;
-		this.timeConstraint = timeConstraint;
-		this.timeIncrement = timeIncrement;
+	public GameInvitation(byte[] invitationId, GameSide inviterSide, SimpleGameInfo info){
+		this.invitationId = invitationId;
 		this.inviterSide = inviterSide;
+		this.info = info;
+	}
+
+	public byte[] getInviterId(){
+		return info.getId(inviterSide);
+	}
+
+	public byte[] getInviteeId(){
+		return info.getId(inviterSide.getOpposite());
 	}
 }

@@ -2,16 +2,18 @@ package me.protoflicker.chessmate.data;
 
 import lombok.Getter;
 import me.protoflicker.chessmate.Server;
-import me.protoflicker.chessmate.console.Logger;
 import me.protoflicker.chessmate.data.table.*;
 import me.protoflicker.chessmate.protocol.chess.ChessBoard;
 import me.protoflicker.chessmate.protocol.chess.ChessUtils;
 import me.protoflicker.chessmate.protocol.chess.enums.GameInfo;
 import me.protoflicker.chessmate.protocol.chess.enums.GameSide;
 import me.protoflicker.chessmate.protocol.chess.enums.GameStatus;
-import me.protoflicker.chessmate.util.DatabaseUtils;
+import me.protoflicker.chessmate.protocol.chess.enums.SimpleGameInfo;
+import me.protoflicker.chessmate.protocol.packet.game.invitation.GameInvitation;
 
 import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class DataManager {
 
@@ -110,6 +112,17 @@ public class DataManager {
 		return new GameInfo(gameId, gameName, white, black, board);
 	}
 
+	public static List<SimpleGameInfo> getGamesByUser(byte[] userId){
+		List<SimpleGameInfo> games = new ArrayList<>();
+		//query game ids by user, getSimpleGame() for each and return
+		return games;
+	}
+
+	public static void initGame(GameInvitation inv){
+		byte[] gameId = GameTable.createGameAndGetId(inv.getInfo());
+		ParticipationTable.createParticipation(gameId, inv.getInfo().getWhiteId(), inv.getInfo().getBlackId());
+	}
+
 	public static void createTables(Database database){
 		UserTable.createTable(database);
 		GameTable.createTable(database);
@@ -117,13 +130,6 @@ public class DataManager {
 		TokenTable.createTable(database);
 		ParticipationTable.createTable(database);
 		MovesTable.createTable(database);
-
-
-		Logger.getInstance().log(DatabaseUtils.bytesToHex(UserTable.getUserIdByUsername("protoflicker")));
-//		MovesTable.addMove(HexFormat.of().parseHex("1BAF3EC9A6D611ED882DA46BB6E06E7E"),
-//				new PerformedChessMove(new Timestamp(System.currentTimeMillis()),
-//						new ChessMove(MoveType.MOVE, GameSide.WHITE, PieceType.PAWN,
-//								new ChessPosition(2, 0),
-//								new ChessPosition(4, 0))), 1);
+		InvitationsTable.createTable(database);
 	}
 }

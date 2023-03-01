@@ -15,7 +15,8 @@ public enum GameStatus {
 	BLACK_WIN_RESIGNATION("Black win by resignation", GameSide.BLACK, 6),
 	DRAW_BY_STALEMATE("Draw by stalemate", null, 7),
 	DRAW_BY_INSUFFICIENT_MATERIAL("Draw by insufficient material", null, 8),
-	DRAW_BY_AGREEMENT("Draw by agreement", null, 9);
+	DRAW_BY_AGREEMENT("Draw by agreement", null, 9),
+	DRAW_BY_INSUFFICIENT_VS_TIMING("Draw by insufficient material vs timeout", null, 10);
 
 	@Getter
 	private final String name;
@@ -30,6 +31,10 @@ public enum GameStatus {
 		this.name = name;
 		this.winner = winner;
 		this.code = code;
+	}
+
+	public boolean isDraw(){
+		return winner == null;
 	}
 
 	private static final Map<Integer, GameStatus> codeMap = new HashMap<>();

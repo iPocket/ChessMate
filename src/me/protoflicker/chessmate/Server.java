@@ -24,7 +24,7 @@ public class Server {
 
 	public static final int BACKLOG_SIZE = 50;
 
-	private final static int DEFAULT_PORT = 13372;
+	private static final int DEFAULT_PORT = 13372;
 
 
 	@Getter

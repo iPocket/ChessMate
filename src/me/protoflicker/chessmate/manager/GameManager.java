@@ -8,6 +8,8 @@ import me.protoflicker.chessmate.data.DataManager;
 import me.protoflicker.chessmate.protocol.chess.enums.GameInfo;
 import me.protoflicker.chessmate.protocol.chess.enums.GameStatus;
 import me.protoflicker.chessmate.protocol.packet.ClientPacket;
+import me.protoflicker.chessmate.protocol.packet.game.info.GamesRequestPacket;
+import me.protoflicker.chessmate.protocol.packet.game.info.response.GamesResponsePacket;
 import me.protoflicker.chessmate.protocol.packet.game.request.GameDrawDeclinePacket;
 import me.protoflicker.chessmate.protocol.packet.game.request.GameMoveRequestPacket;
 import me.protoflicker.chessmate.protocol.packet.game.request.GameRequestPacket;
@@ -50,6 +52,10 @@ public class GameManager {
 		} else {
 			c.sendPacket(new GameNotFoundPacket(p.getGameId()));
 		}
+
+		if(game != null){
+			game.checkTimings();
+		}
 	}
 
 	public static void handleMoveRequest(ClientThread c, ClientPacket packet){
@@ -78,6 +84,15 @@ public class GameManager {
 			game.checkTimings();
 		}
 	}
+
+
+	public static void handleGamesRequest(ClientThread c, ClientPacket packet){
+		GamesRequestPacket p = (GamesRequestPacket) packet;
+
+		c.sendPacket(new GamesResponsePacket(p.getUserId(),
+				DataManager.getGamesByUser(p.getUserId())));
+	}
+
 
 
 
