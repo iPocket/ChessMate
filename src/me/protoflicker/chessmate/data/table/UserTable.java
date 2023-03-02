@@ -14,7 +14,7 @@ public abstract class UserTable {
 				"""
 				SELECT userId
 				FROM `Users`
-				WHERE username = ?
+				WHERE LOWER(username) = LOWER(?)
 				LIMIT 1;
 				""";
 

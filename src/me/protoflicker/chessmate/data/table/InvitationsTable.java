@@ -17,7 +17,7 @@ public class InvitationsTable {
 	public static GameInvitation getInvitationById(byte[] invitationId){
 		String statement =
 				"""
-						SELECT inviterId,inviteeId,gameName,startingBoard,timeConstraint,timeIncrement,inviterSide
+						SELECT inviterId,inviteeId,invitationName,gameName,startingBoard,timeConstraint,timeIncrement,inviterSide
 						FROM `Invitations`
 						WHERE invitationId = ? AND expiry > NOW()
 						LIMIT 1;
@@ -31,6 +31,7 @@ public class InvitationsTable {
 						invitationId,
 						r.getBytes("inviterId"),
 						r.getBytes("inviteeId"),
+						r.getString("invitationName"),
 						r.getString("gameName"),
 						r.getString("startingBoard"),
 						r.getInt("timeConstraint"),
@@ -50,7 +51,7 @@ public class InvitationsTable {
 
 		String statement =
 				"""
-				SELECT invitationId,inviterId,inviteeId,gameName,startingBoard,timeConstraint,timeIncrement,inviterSide
+				SELECT invitationId,inviterId,inviteeId,invitationName,gameName,startingBoard,timeConstraint,timeIncrement,inviterSide
 				FROM `Invitations`
 				WHERE inviteeId = ? AND expiry > NOW()
 				ORDER BY expiry DESC;
@@ -64,6 +65,7 @@ public class InvitationsTable {
 						r.getBytes("invitationId"),
 						r.getBytes("inviterId"),
 						inviteeId,
+						r.getString("invitationName"),
 						r.getString("gameName"),
 						r.getString("startingBoard"),
 						r.getInt("timeConstraint"),
@@ -80,7 +82,7 @@ public class InvitationsTable {
 	}
 
 	private static GameInvitation getGameInvitation(byte[] invitationId, byte[] inviterId,
-													byte[] inviteeId, String gameName, String startingBoard, int timeConstraint, int timeIncrement,
+													byte[] inviteeId, String invitationName, String gameName, String startingBoard, int timeConstraint, int timeIncrement,
 													GameSide inviterSide){
 		return new GameInvitation(
 				invitationId,
@@ -93,7 +95,8 @@ public class InvitationsTable {
 						startingBoard,
 						timeConstraint,
 						timeIncrement
-				)
+				),
+				invitationName
 		);
 	}
 
@@ -101,19 +104,20 @@ public class InvitationsTable {
 	public static byte[] createInvitationAndGetId(GameInvitation inv){
 		String statement =
 				"""
-				INSERT INTO `Invitations` (inviterId, inviteeId, expiry, gameName, startingBoard, timeConstraint, timeIncrement, inviterSide)
+				INSERT INTO `Invitations` (inviterId, inviteeId, invitationName, expiry, gameName, startingBoard, timeConstraint, timeIncrement, inviterSide)
 				VALUES (?, ?, ?, ?, ?, ?, ?);
 				""";
 
 		try (PreparedStatement s = Server.getThreadDatabase().getConnection().prepareStatement(statement, Statement.RETURN_GENERATED_KEYS)){
 			s.setBytes(1, inv.getInviterId());
 			s.setBytes(2, inv.getInviteeId());
-			s.setTimestamp(3, new Timestamp(System.currentTimeMillis() + TimeUnit.DAYS.toMillis(2)));
-			s.setString(4, inv.getInfo().getGameName());
-			s.setString(5, inv.getInfo().getStartingBoard());
-			s.setInt(6, inv.getInfo().getTimeConstraint());
-			s.setInt(7, inv.getInfo().getTimeIncrement());
-			s.setInt(8, inv.getInviterSide().getCode());
+			s.setString(3, inv.getInvitationName());
+			s.setTimestamp(4, new Timestamp(System.currentTimeMillis() + TimeUnit.DAYS.toMillis(2)));
+			s.setString(5, inv.getInfo().getGameName());
+			s.setString(6, inv.getInfo().getStartingBoard());
+			s.setInt(7, inv.getInfo().getTimeConstraint());
+			s.setInt(8, inv.getInfo().getTimeIncrement());
+			s.setInt(9, inv.getInviterSide().getCode());
 			s.executeUpdate();
 
 			return s.getGeneratedKeys().getBytes("invitationId");
@@ -148,6 +152,7 @@ public class InvitationsTable {
 						inviterId BINARY(16) NOT NULL,
 						inviteeId BINARY(16) NOT NULL,
 						expiry TIMESTAMP NOT NULL,
+						invitationName VARCHAR(64) NOT NULL,
 						gameName VARCHAR(64) DEFAULT "Unnamed Game" NOT NULL,
 						startingBoard CHAR(191) DEFAULT ("%MedicBag%") NOT NULL,
 						timeConstraint INT(16) UNSIGNED NOT NULL,

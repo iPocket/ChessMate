@@ -14,15 +14,19 @@ public final class GameInvitation implements Serializable {
 	private byte[] invitationId;
 
 	@Getter
+	private final String invitationName;
+
+	@Getter
 	private final GameSide inviterSide;
 
 	@Getter
 	private final SimpleGameInfo info;
 
-	public GameInvitation(byte[] invitationId, GameSide inviterSide, SimpleGameInfo info){
+	public GameInvitation(byte[] invitationId, GameSide inviterSide, SimpleGameInfo info, String invitationName){
 		this.invitationId = invitationId;
 		this.inviterSide = inviterSide;
 		this.info = info;
+		this.invitationName = invitationName;
 	}
 
 	public byte[] getInviterId(){
