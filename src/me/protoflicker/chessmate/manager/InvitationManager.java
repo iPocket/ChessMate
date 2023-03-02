@@ -4,14 +4,15 @@ import me.protoflicker.chessmate.connection.ClientThread;
 import me.protoflicker.chessmate.connection.PacketHandler;
 import me.protoflicker.chessmate.data.DataManager;
 import me.protoflicker.chessmate.data.table.InvitationsTable;
+import me.protoflicker.chessmate.protocol.chess.ChessUtils;
+import me.protoflicker.chessmate.protocol.chess.enums.GameSide;
+import me.protoflicker.chessmate.protocol.chess.enums.SimpleGameInfo;
 import me.protoflicker.chessmate.protocol.packet.ClientPacket;
 import me.protoflicker.chessmate.protocol.packet.game.invitation.*;
 import me.protoflicker.chessmate.protocol.packet.game.invitation.info.GameInvitesRequestPacket;
 import me.protoflicker.chessmate.protocol.packet.game.invitation.info.response.GameInvitesResponsePacket;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class InvitationManager {
 
@@ -20,7 +21,7 @@ public class InvitationManager {
 		GameInvitePacket p = (GameInvitePacket) packet;
 
 		GameInvitation inv = p.getInvitation();
-		if(inv == null || !LoginManager.isAuthorised(c, inv.getInviterId())){
+		if(inv == null || !LoginManager.isAuthorised(c, inv.getInviterId()) || inv.getInvitationId() == inv.getInviteeId()){
 			return;
 		}
 
@@ -64,6 +65,12 @@ public class InvitationManager {
 
 		c.sendPacket(new GameInvitesResponsePacket(p.getUserId(),
 				InvitationsTable.getInvitationsByInviteeId(p.getUserId())));
+//		List<GameInvitation> test = new ArrayList<>();
+//		test.add(new GameInvitation(p.getUserId(), GameSide.WHITE, new SimpleGameInfo(p.getUserId(), "Game 1",
+//				p.getUserId(), p.getUserId(), ChessUtils.getStartingBoardText(), 600, 10)));
+//		test.add(new GameInvitation(p.getUserId(), GameSide.BLACK, new SimpleGameInfo(p.getUserId(), "Game 2",
+//				p.getUserId(), p.getUserId(), ChessUtils.getStartingBoardText(), 10, 30)));
+//		c.sendPacket(new GameInvitesResponsePacket(p.getUserId(), test));
 	}
 
 

@@ -159,5 +159,7 @@ public class GameManager {
 		packetHandlers.put(GameMoveRequestPacket.class, GameManager::handleMoveRequest);
 		packetHandlers.put(GameDrawDeclinePacket.class, GameManager::handleDrawDecline);
 		packetHandlers.put(GameTimingsRequestPacket.class, GameManager::handleTimingsCheck);
+
+		packetHandlers.put(GamesRequestPacket.class, GameManager::handleGamesRequest);
 	}
 }

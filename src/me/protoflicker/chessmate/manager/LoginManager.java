@@ -14,10 +14,12 @@ import me.protoflicker.chessmate.protocol.packet.user.login.response.LoginThrott
 import me.protoflicker.chessmate.protocol.packet.user.login.response.LoginUnsuccessfulPacket;
 import me.protoflicker.chessmate.protocol.packet.user.register.RegisterPacket;
 import me.protoflicker.chessmate.protocol.packet.user.register.response.*;
+import me.protoflicker.chessmate.protocol.packet.user.setting.UserLogoutPacket;
 import me.protoflicker.chessmate.protocol.packet.user.setting.UserPasswordChangePacket;
 import me.protoflicker.chessmate.protocol.packet.user.setting.response.UserPasswordChangeBadPasswordPacket;
 import me.protoflicker.chessmate.protocol.packet.user.setting.response.UserPasswordChangeSuccessfulPacket;
 import me.protoflicker.chessmate.protocol.packet.user.setting.response.UserPasswordChangeUnsuccessfulPacket;
+import me.protoflicker.chessmate.protocol.packet.user.setting.response.UserPasswordChangeWrongPasswordPacket;
 
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -46,6 +48,8 @@ public abstract class LoginManager {
 			token = TokenTable.createAndAddToken(userId);
 		}
 
+		UserTable.updateLastLogin(userId);
+
 		if(register){
 			c.sendPacket(new RegisterSuccessfulPacket(userId, UserTable.getUserInfo(userId), token));
 		} else {
@@ -53,8 +57,6 @@ public abstract class LoginManager {
 		}
 
 		loggedIn.put(c, userId);
-		UserTable.updateLastLogin(userId);
-		unregisterHandlers(c);
 	}
 
 	public static byte[] getUserId(ClientThread c){
@@ -192,7 +194,7 @@ public abstract class LoginManager {
 		}
 
 		if(!isPasswordCorrect(userId, p.getOldPassword())){
-			c.sendPacket(new UserPasswordChangeBadPasswordPacket()); //could consider throttling here, potential vulnerability
+			c.sendPacket(new UserPasswordChangeWrongPasswordPacket()); //could consider throttling here, potential vulnerability
 			return;
 		}
 		
@@ -201,6 +203,17 @@ public abstract class LoginManager {
 		c.sendPacket(new UserPasswordChangeSuccessfulPacket());
 	}
 
+	public static void handleLogout(ClientThread c, ClientPacket packet){
+		UserLogoutPacket p = (UserLogoutPacket) packet;
+
+		byte[] userId = loggedIn.get(c);
+		if(userId == null){
+			return;
+		}
+
+		TokenTable.removeTokenIfAuthorised(userId, p.getToken());
+		c.interrupt();
+	}
 
 
 	private static final Map<Class<?>, PacketHandler> packetHandlers = new HashMap<>();
@@ -226,5 +239,6 @@ public abstract class LoginManager {
 		packetHandlers.put(RegisterPacket.class, LoginManager::handleRegister);
 
 		packetHandlers.put(UserPasswordChangePacket.class, LoginManager::handleChangePassword);
+		packetHandlers.put(UserLogoutPacket.class, LoginManager::handleLogout);
 	}
 }

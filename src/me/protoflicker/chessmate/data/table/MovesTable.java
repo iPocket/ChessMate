@@ -80,6 +80,27 @@ public final class MovesTable {
 		}
 	}
 
+	public static int getNumberOfMoves(byte[] gameId){
+		String statement =
+				"""
+				SELECT count(moveNumber)
+				FROM `Moves`
+				WHERE gameId = ?;
+				""";
+
+		try (PreparedStatement s = Server.getThreadDatabase().getConnection().prepareStatement(statement)){
+			s.setBytes(1, gameId);
+			ResultSet r = s.executeQuery();
+			if(r.next()){
+				return r.getInt(1);
+			} else {
+				return 0;
+			}
+		} catch (SQLException e){
+			throw new RuntimeException(e);
+		}
+	}
+
 	public static void addMove(byte[] gameId, PerformedChessMove move, int moveNumber){
 		String statement =
 				"""

@@ -19,7 +19,7 @@ public class InvitationsTable {
 				"""
 						SELECT inviterId,inviteeId,gameName,startingBoard,timeConstraint,timeIncrement,inviterSide
 						FROM `Invitations`
-						WHERE invitationId = ?
+						WHERE invitationId = ? AND expiry > NOW()
 						LIMIT 1;
 						""";
 
@@ -52,7 +52,7 @@ public class InvitationsTable {
 				"""
 				SELECT invitationId,inviterId,inviteeId,gameName,startingBoard,timeConstraint,timeIncrement,inviterSide
 				FROM `Invitations`
-				WHERE inviteeId = ?
+				WHERE inviteeId = ? AND expiry > NOW()
 				ORDER BY expiry DESC;
 				""";
 

@@ -10,6 +10,7 @@ import me.protoflicker.chessmate.protocol.chess.enums.GameSide;
 import me.protoflicker.chessmate.protocol.chess.enums.GameStatus;
 import me.protoflicker.chessmate.protocol.chess.enums.SimpleGameInfo;
 import me.protoflicker.chessmate.protocol.packet.game.invitation.GameInvitation;
+import me.protoflicker.chessmate.util.Pair;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -45,7 +46,20 @@ public class DataManager {
 	}
 
 	public static GameInfo getFullGame(byte[] gameId){
-		GameInfo info;
+		SimpleGameInfo info = getSimpleGame(gameId);
+		if(info != null){
+			ChessBoard board = new ChessBoard(ChessUtils.stringToBoard(info.getStartingBoard()), info.getStartTime(),
+					info.getTimeConstraint(),
+					info.getTimeIncrement());
+			board.initMoves(MovesTable.getAllMoves(gameId));
+			board.setGameStatus(info.getStatus());
+			return new GameInfo(gameId, info.getGameName(), info.getWhiteId(), info.getBlackId(), board);
+		} else {
+			return null;
+		}
+	}
+
+	public static SimpleGameInfo getSimpleGame(byte[] gameId){
 		String gameName;
 		Timestamp startTime;
 		String startingBoard;
@@ -87,34 +101,58 @@ public class DataManager {
 							SELECT userId,gameSide
 							FROM `Participations`
 							WHERE gameId = ?
-							LIMIT 1;
+							LIMIT 2;
 							""";
 			try (PreparedStatement s = Server.getThreadDatabase().getConnection().prepareStatement(statement)) {
 				s.setBytes(1, gameId);
 				ResultSet r = s.executeQuery();
-				if(r.next()){
+				while(r.next()){
 					if(GameSide.getByCode(r.getInt(2)) == GameSide.WHITE){
 						white = r.getBytes(1);
 					} else {
 						black = r.getBytes(1);
 					}
-				} else {
-					return null;
 				}
 			} catch(SQLException e){
 				throw new RuntimeException(e);
 			}
 		}
 
-		ChessBoard board = new ChessBoard(ChessUtils.stringToBoard(startingBoard), startTime, timeConstraint, timeIncrement);
-		board.initMoves(MovesTable.getAllMoves(gameId));
-		board.setGameStatus(status);
-		return new GameInfo(gameId, gameName, white, black, board);
+		if(white == null || black == null){
+			return null;
+		}
+
+		return new SimpleGameInfo(gameId, gameName, white, black, startingBoard, timeConstraint, timeIncrement, status, startTime,
+				MovesTable.getNumberOfMoves(gameId) % 2 == 0 ? GameSide.WHITE : GameSide.BLACK);
 	}
 
 	public static List<SimpleGameInfo> getGamesByUser(byte[] userId){
+		List<byte[]> ids = new ArrayList<>();
 		List<SimpleGameInfo> games = new ArrayList<>();
 		//query game ids by user, getSimpleGame() for each and return
+
+		{
+			String statement =
+					"""
+							SELECT gameId
+							FROM `Participations`
+							WHERE userId = ?;
+							""";
+			try (PreparedStatement s = Server.getThreadDatabase().getConnection().prepareStatement(statement)) {
+				s.setBytes(1, userId);
+				ResultSet r = s.executeQuery();
+				while(r.next()){
+					ids.add(r.getBytes(1));
+				}
+			} catch(SQLException e){
+				throw new RuntimeException(e);
+			}
+		}
+
+		for(byte[] id : ids){
+			games.add(getSimpleGame(id));
+		}
+
 		return games;
 	}
 

@@ -17,7 +17,7 @@ public class TokenTable {
 				"""
 				SELECT userId
 				FROM `Tokens`
-				WHERE token = ? AND expiry < NOW()
+				WHERE token = ? AND expiry > NOW()
 				LIMIT 1;
 				""";
 
@@ -35,7 +35,7 @@ public class TokenTable {
 	}
 
 	public static String createAndAddToken(byte[] userId){
-		String newToken = GeneralUtils.getSecureRandomString(64);
+		String newToken = GeneralUtils.getSecureRandomString(128);
 		String statement =
 				"""
 				INSERT INTO `Tokens` (userId, token, expiry)
@@ -45,10 +45,26 @@ public class TokenTable {
 		try (PreparedStatement s = Server.getThreadDatabase().getConnection().prepareStatement(statement)){
 			s.setBytes(1, userId);
 			s.setString(2, newToken);
-			s.setTimestamp(3, new Timestamp(System.currentTimeMillis() + TimeUnit.DAYS.toMillis(30)));
+			s.setTimestamp(3, new Timestamp(System.currentTimeMillis() + TimeUnit.DAYS.toMillis(14)));
 			s.executeUpdate();
 
 			return newToken;
+		} catch (SQLException e){
+			throw new RuntimeException(e);
+		}
+	}
+
+	public static void removeTokenIfAuthorised(byte[] userId, String token){
+		String statement =
+				"""
+				DELETE FROM `Tokens`
+				WHERE token = ? AND userId = ?;
+				""";
+
+		try (PreparedStatement s = Server.getThreadDatabase().getConnection().prepareStatement(statement)){
+			s.setString(1, token);
+			s.setBytes(2, userId);
+			s.executeUpdate();
 		} catch (SQLException e){
 			throw new RuntimeException(e);
 		}
@@ -59,7 +75,7 @@ public class TokenTable {
 			String statement =
 					"""
 						CREATE TABLE IF NOT EXISTS `Tokens` (
-						token CHAR(64) NOT NULL UNIQUE,
+						token CHAR(128) NOT NULL UNIQUE,
 						userId BINARY(16) NOT NULL,
 						expiry TIMESTAMP NOT NULL,
 						PRIMARY KEY (token),
