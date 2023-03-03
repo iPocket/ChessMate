@@ -6,14 +6,18 @@ import me.protoflicker.chessmate.data.DataManager;
 import me.protoflicker.chessmate.data.table.InvitationsTable;
 import me.protoflicker.chessmate.data.table.UserTable;
 import me.protoflicker.chessmate.protocol.packet.ClientPacket;
-import me.protoflicker.chessmate.protocol.packet.game.invitation.*;
+import me.protoflicker.chessmate.protocol.packet.game.invitation.GameInvitation;
+import me.protoflicker.chessmate.protocol.packet.game.invitation.GameInviteAcceptPacket;
+import me.protoflicker.chessmate.protocol.packet.game.invitation.GameInviteDeclinePacket;
+import me.protoflicker.chessmate.protocol.packet.game.invitation.GameInvitePacket;
 import me.protoflicker.chessmate.protocol.packet.game.invitation.info.GameInvitesRequestPacket;
 import me.protoflicker.chessmate.protocol.packet.game.invitation.info.response.GameInvitesResponsePacket;
-import me.protoflicker.chessmate.protocol.packet.game.invitation.update.GameInviteSuccessfulPacket;
-import me.protoflicker.chessmate.protocol.packet.game.invitation.update.GameInviteUnsuccessfulPacket;
-import me.protoflicker.chessmate.protocol.packet.game.invitation.update.GameInvitedPacket;
+import me.protoflicker.chessmate.protocol.packet.game.invitation.update.*;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 
 public class InvitationManager {
 
@@ -49,10 +53,15 @@ public class InvitationManager {
 			GameInvitation inv = InvitationsTable.getInvitationById(p.getInvitationId());
 			if(inv != null){
 				if(Arrays.equals(inv.getInviteeId(), userId)){
-					DataManager.initGame(inv);
+					InvitationsTable.removeReceivedInvitation(p.getInvitationId(), userId);
+					byte[] gameId = DataManager.initGameAndGetId(inv);
+					c.sendPacket(new GameInviteAcceptSuccessfulPacket(inv.getInvitationId(), gameId));
+					return;
 				}
 			}
 		}
+
+		c.sendPacket(new GameInviteAcceptUnsuccessfulPacket(p.getInvitationId()));
 	}
 
 

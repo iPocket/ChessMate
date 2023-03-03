@@ -7,9 +7,11 @@ import me.protoflicker.chessmate.protocol.packet.ClientPacket;
 import me.protoflicker.chessmate.protocol.packet.user.UserInfo;
 import me.protoflicker.chessmate.protocol.packet.user.info.UserIdRequestPacket;
 import me.protoflicker.chessmate.protocol.packet.user.info.UserInfoRequestPacket;
+import me.protoflicker.chessmate.protocol.packet.user.info.UsersInfoRequestPacket;
 import me.protoflicker.chessmate.protocol.packet.user.info.UsersOnlineRequestPacket;
 import me.protoflicker.chessmate.protocol.packet.user.info.response.UserIdResponsePacket;
 import me.protoflicker.chessmate.protocol.packet.user.info.response.UserInfoResponsePacket;
+import me.protoflicker.chessmate.protocol.packet.user.info.response.UsersInfoResponsePacket;
 import me.protoflicker.chessmate.protocol.packet.user.info.response.UsersOnlineResponsePacket;
 
 import java.util.HashMap;
@@ -35,6 +37,24 @@ public class IntelManager {
 		}
 
 		c.sendPacket(new UserInfoResponsePacket(p.getUserId(), info));
+	}
+
+
+	public static void handleUsersInfoRequest(ClientThread c, ClientPacket packet){
+		UsersInfoRequestPacket p = (UsersInfoRequestPacket) packet;
+		Map<byte[], UserInfo> infos = new HashMap<>();
+
+		for(byte[] userId : p.getUserIds()){
+			UserInfo info = UserTable.getUserInfo(userId);
+
+			if(info != null){
+				info = new UserInfo(info.getUserId(), info.getUsername(), null, info.getAccountType(), info.getLastLogin());
+			}
+
+			infos.put(userId, info);
+		}
+
+		c.sendPacket(new UsersInfoResponsePacket(infos));
 	}
 
 
@@ -64,6 +84,7 @@ public class IntelManager {
 	private static void initHandlers(){
 		packetHandlers.put(UserIdRequestPacket.class, IntelManager::handleUserIdRequest);
 		packetHandlers.put(UserInfoRequestPacket.class, IntelManager::handleUserInfoRequest);
+		packetHandlers.put(UsersInfoRequestPacket.class, IntelManager::handleUsersInfoRequest);
 		packetHandlers.put(UsersOnlineRequestPacket.class, IntelManager::handleUsersOnlineRequest);
 	}
 }

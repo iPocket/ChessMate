@@ -72,15 +72,17 @@ public class RunningGame {
 
 	public void requestDraw(ClientThread c, GameSide side){
 		//already in sync
-		if(isAuthorised(c, side) && checkTimings()){
-			Integer otherLast = drawRequestAtMove.getOrDefault(side.getOpposite(), 0);
-			if(info.getBoard().getNumberOfPerformedMoves() == otherLast){
-				info.getBoard().performMove(new ChessMove(MoveType.DRAW_AGREEMENT, null, null, null, null),
-						new Timestamp(System.currentTimeMillis()));
-				updateGameStatus();
-			} else {
-				drawRequestAtMove.put(side, info.getBoard().getNumberOfPerformedMoves());
-				broadcastPacket(new GameDrawOfferPacket(info.getGameId(), side), List.of(c));
+		synchronized(locker) {
+			if(isAuthorised(c, side) && checkTimings()){
+				Integer otherLast = drawRequestAtMove.getOrDefault(side.getOpposite(), 0);
+				if(info.getBoard().getNumberOfPerformedMoves() == otherLast){
+					info.getBoard().performMove(new ChessMove(MoveType.DRAW_AGREEMENT, null, null, null, null),
+							new Timestamp(System.currentTimeMillis()));
+					updateGameStatus();
+				} else {
+					drawRequestAtMove.put(side, info.getBoard().getNumberOfPerformedMoves());
+					broadcastPacket(new GameDrawOfferPacket(info.getGameId(), side), List.of(c));
+				}
 			}
 		}
 	}

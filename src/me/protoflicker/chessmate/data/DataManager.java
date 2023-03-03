@@ -10,7 +10,6 @@ import me.protoflicker.chessmate.protocol.chess.enums.GameSide;
 import me.protoflicker.chessmate.protocol.chess.enums.GameStatus;
 import me.protoflicker.chessmate.protocol.chess.enums.SimpleGameInfo;
 import me.protoflicker.chessmate.protocol.packet.game.invitation.GameInvitation;
-import me.protoflicker.chessmate.util.Pair;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -156,9 +155,10 @@ public class DataManager {
 		return games;
 	}
 
-	public static void initGame(GameInvitation inv){
+	public static byte[] initGameAndGetId(GameInvitation inv){
 		byte[] gameId = GameTable.createGameAndGetId(inv.getInfo());
 		ParticipationTable.createParticipation(gameId, inv.getInfo().getWhiteId(), inv.getInfo().getBlackId());
+		return gameId;
 	}
 
 	public static void createTables(Database database){

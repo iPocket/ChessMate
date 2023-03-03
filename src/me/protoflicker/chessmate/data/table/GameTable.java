@@ -6,7 +6,10 @@ import me.protoflicker.chessmate.protocol.chess.ChessUtils;
 import me.protoflicker.chessmate.protocol.chess.enums.GameStatus;
 import me.protoflicker.chessmate.protocol.chess.enums.SimpleGameInfo;
 
-import java.sql.*;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Timestamp;
 
 public final class GameTable {
 
@@ -195,7 +198,7 @@ public final class GameTable {
 				startingBoard CHAR(191) DEFAULT ("%MedicBag%") NOT NULL,
 				timeConstraint INT(16) UNSIGNED NOT NULL,
 				timeIncrement INT(16) UNSIGNED NOT NULL,
-				status TINYINT(1) UNSIGNED DEFAULT 0 NOT NULL,
+				status TINYINT(2) UNSIGNED DEFAULT 0 NOT NULL,
 				PRIMARY KEY (gameId)
 				);
 				""".replace("%MedicBag%", ChessUtils.getStartingBoardText());
