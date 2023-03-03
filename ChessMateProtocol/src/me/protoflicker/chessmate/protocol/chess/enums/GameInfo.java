@@ -4,6 +4,7 @@ import lombok.Getter;
 import me.protoflicker.chessmate.protocol.chess.ChessBoard;
 
 import java.io.Serializable;
+import java.util.Arrays;
 
 public class GameInfo implements Serializable {
 
@@ -35,10 +36,10 @@ public class GameInfo implements Serializable {
 	}
 
 	public boolean isAuthorised(byte[] userId, GameSide side){
-		return getId(side) == userId;
+		return Arrays.equals(getId(side), userId);
 	}
 
 	public boolean isParticipant(byte[] userId){
-		return blackId == userId || whiteId == userId;
+		return Arrays.equals(blackId, userId) || Arrays.equals(whiteId, userId);
 	}
 }

@@ -7,6 +7,7 @@ import me.protoflicker.chessmate.data.table.TokenTable;
 import me.protoflicker.chessmate.data.table.UserTable;
 import me.protoflicker.chessmate.protocol.chess.enums.AccountType;
 import me.protoflicker.chessmate.protocol.packet.ClientPacket;
+import me.protoflicker.chessmate.protocol.packet.connection.ConnectPacket;
 import me.protoflicker.chessmate.protocol.packet.user.login.LoginByPasswordPacket;
 import me.protoflicker.chessmate.protocol.packet.user.login.LoginByTokenPacket;
 import me.protoflicker.chessmate.protocol.packet.user.login.response.LoginSuccessfulPacket;
@@ -41,11 +42,14 @@ public abstract class LoginManager {
 		return hashPassword(givenPassword).equals(UserTable.getHashedPassword(userId));
 	}
 
+	public static List<byte[]> getOnlineUsers(){
+		return loggedIn.values().stream().toList();
+	}
 
 	private static void doSuccessfulLogin(ClientThread c, byte[] userId, boolean sendToken, boolean register){
 		String token = null;
 		if(sendToken){
-			token = TokenTable.createAndAddToken(userId);
+			token = TokenTable.createAndGetToken(userId);
 		}
 
 		UserTable.updateLastLogin(userId);
@@ -64,13 +68,13 @@ public abstract class LoginManager {
 	}
 
 	public static boolean isAuthorised(ClientThread c, byte[] userId){
-		return getUserId(c) == userId;
+		return Arrays.equals(getUserId(c), userId);
 	}
 
 	public static Set<ClientThread> getClientsById(byte[] userId){
 		Set<ClientThread> clients = new HashSet<>();
 		for(Map.Entry<ClientThread, byte[]> entry : loggedIn.entrySet()){
-			if(userId == entry.getValue()){
+			if(Arrays.equals(userId, entry.getValue())){
 				clients.add(entry.getKey());
 			}
 		}
@@ -79,7 +83,7 @@ public abstract class LoginManager {
 	}
 
 	public static boolean isUsernameValid(String username){
-		return username != null && username.length() <= 32 && username.length() >= 2;
+		return username != null && username.length() <= 32 && username.length() >= 2 && username.matches(ConnectPacket.getUsernameRegex());
 	}
 
 	public static boolean isPasswordValid(String password){
@@ -212,7 +216,7 @@ public abstract class LoginManager {
 		}
 
 		TokenTable.removeTokenIfAuthorised(userId, p.getToken());
-		c.interrupt();
+		c.tryClose();
 	}
 
 

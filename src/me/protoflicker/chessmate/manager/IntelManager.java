@@ -7,8 +7,10 @@ import me.protoflicker.chessmate.protocol.packet.ClientPacket;
 import me.protoflicker.chessmate.protocol.packet.user.UserInfo;
 import me.protoflicker.chessmate.protocol.packet.user.info.UserIdRequestPacket;
 import me.protoflicker.chessmate.protocol.packet.user.info.UserInfoRequestPacket;
+import me.protoflicker.chessmate.protocol.packet.user.info.UsersOnlineRequestPacket;
 import me.protoflicker.chessmate.protocol.packet.user.info.response.UserIdResponsePacket;
 import me.protoflicker.chessmate.protocol.packet.user.info.response.UserInfoResponsePacket;
+import me.protoflicker.chessmate.protocol.packet.user.info.response.UsersOnlineResponsePacket;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -35,6 +37,13 @@ public class IntelManager {
 		c.sendPacket(new UserInfoResponsePacket(p.getUserId(), info));
 	}
 
+
+	public static void handleUsersOnlineRequest(ClientThread c, ClientPacket packet){
+		UsersOnlineRequestPacket p = (UsersOnlineRequestPacket) packet;
+
+		c.sendPacket(new UsersOnlineResponsePacket(LoginManager.getOnlineUsers()));
+	}
+
 	private static final Map<Class<?>, PacketHandler> packetHandlers = new HashMap<>();
 
 	static {
@@ -55,5 +64,6 @@ public class IntelManager {
 	private static void initHandlers(){
 		packetHandlers.put(UserIdRequestPacket.class, IntelManager::handleUserIdRequest);
 		packetHandlers.put(UserInfoRequestPacket.class, IntelManager::handleUserInfoRequest);
+		packetHandlers.put(UsersOnlineRequestPacket.class, IntelManager::handleUsersOnlineRequest);
 	}
 }

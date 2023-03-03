@@ -52,6 +52,8 @@ public class Server {
 
 	private final Set<ClientThread> clientThreads = Collections.synchronizedSet(new HashSet<>());
 
+	private boolean shuttingDown = false;
+
 
 	public static void init(JSONConfig config) throws InstanceAlreadyExistsException {
 		if(Server.instance == null){
@@ -154,7 +156,7 @@ public class Server {
 
 	private void cycle(){
 		Socket socket = null;
-		while(true){
+		while(!shuttingDown){
 			try {
 				socket = serverSocket.accept();
 			} catch (SocketException e){
@@ -180,6 +182,7 @@ public class Server {
 	private synchronized void closeServer(){
 		Logger.getInstance().log("Shutting down server, may take 30 seconds...");
 
+		shuttingDown = true;
 		try {
 			for(ClientThread thread : clientThreads){
 				thread.tryClose();

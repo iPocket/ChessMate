@@ -34,7 +34,7 @@ public class TokenTable {
 		}
 	}
 
-	public static String createAndAddToken(byte[] userId){
+	public static String createAndGetToken(byte[] userId){
 		String newToken = GeneralUtils.getSecureRandomString(128);
 		String statement =
 				"""

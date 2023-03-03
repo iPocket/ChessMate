@@ -15,7 +15,11 @@ public class ConnectPacket extends Packet implements ClientPacket {
 		this.expectedVersion = expectedVersion;
 	}
 
-	public boolean isCompatible(){
+	public static String getUsernameRegex() {
+		return "^[a-zA-Z0-9._-]{3,}$";
+	}
+
+    public boolean isCompatible(){
 		return expectedVersion.equals(PROTOCOL_VERSION);
 	}
 }

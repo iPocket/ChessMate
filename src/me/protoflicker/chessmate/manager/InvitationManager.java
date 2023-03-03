@@ -4,13 +4,14 @@ import me.protoflicker.chessmate.connection.ClientThread;
 import me.protoflicker.chessmate.connection.PacketHandler;
 import me.protoflicker.chessmate.data.DataManager;
 import me.protoflicker.chessmate.data.table.InvitationsTable;
-import me.protoflicker.chessmate.protocol.chess.ChessUtils;
-import me.protoflicker.chessmate.protocol.chess.enums.GameSide;
-import me.protoflicker.chessmate.protocol.chess.enums.SimpleGameInfo;
+import me.protoflicker.chessmate.data.table.UserTable;
 import me.protoflicker.chessmate.protocol.packet.ClientPacket;
 import me.protoflicker.chessmate.protocol.packet.game.invitation.*;
 import me.protoflicker.chessmate.protocol.packet.game.invitation.info.GameInvitesRequestPacket;
 import me.protoflicker.chessmate.protocol.packet.game.invitation.info.response.GameInvitesResponsePacket;
+import me.protoflicker.chessmate.protocol.packet.game.invitation.update.GameInviteSuccessfulPacket;
+import me.protoflicker.chessmate.protocol.packet.game.invitation.update.GameInviteUnsuccessfulPacket;
+import me.protoflicker.chessmate.protocol.packet.game.invitation.update.GameInvitedPacket;
 
 import java.util.*;
 
@@ -21,16 +22,21 @@ public class InvitationManager {
 		GameInvitePacket p = (GameInvitePacket) packet;
 
 		GameInvitation inv = p.getInvitation();
-		if(inv == null || !LoginManager.isAuthorised(c, inv.getInviterId()) || inv.getInvitationId() == inv.getInviteeId()){
-			return;
-		}
+		if(inv != null
+				&& LoginManager.isAuthorised(c, inv.getInviterId())
+				&& !Arrays.equals(inv.getInviterId(), inv.getInviteeId())
+				&& UserTable.getUsername(inv.getInviteeId()) != null){
+			byte[] invitationId = InvitationsTable.createInvitationAndGetId(inv);
+			c.sendPacket(new GameInviteSuccessfulPacket(inv));
 
-		byte[] invitationId = InvitationsTable.createInvitationAndGetId(inv);
-		inv.setInvitationId(invitationId);
+			inv.setInvitationId(invitationId);
 
-		Set<ClientThread> clients = LoginManager.getClientsById(inv.getInviteeId());
-		for(ClientThread client : clients){
-			client.sendPacket(new GameInvitedPacket(inv));
+			Set<ClientThread> clients = LoginManager.getClientsById(inv.getInviteeId());
+			for(ClientThread client : clients){
+				client.sendPacket(new GameInvitedPacket(inv));
+			}
+		} else {
+			c.sendPacket(new GameInviteUnsuccessfulPacket(inv));
 		}
 	}
 
@@ -42,7 +48,7 @@ public class InvitationManager {
 		if(userId != null){
 			GameInvitation inv = InvitationsTable.getInvitationById(p.getInvitationId());
 			if(inv != null){
-				if(inv.getInviteeId() == userId){
+				if(Arrays.equals(inv.getInviteeId(), userId)){
 					DataManager.initGame(inv);
 				}
 			}

@@ -165,17 +165,20 @@ public final class GameTable {
 		String statement =
 				"""
 				INSERT INTO `Games` (gameName, startingBoard, timeConstraint, timeIncrement)
-				VALUES (?, ?, ?, ?);
+				VALUES (?, ?, ?, ?)
+				RETURNING gameId;
 				""";
 
-		try (PreparedStatement s = Server.getThreadDatabase().getConnection().prepareStatement(statement, Statement.RETURN_GENERATED_KEYS)){
+		try (PreparedStatement s = Server.getThreadDatabase().getConnection().prepareStatement(statement)){
 			s.setString(1, info.getGameName());
 			s.setString(2, info.getStartingBoard());
 			s.setInt(3, info.getTimeConstraint());
 			s.setInt(4, info.getTimeIncrement());
-			s.executeUpdate();
+			s.execute();
 
-			return s.getGeneratedKeys().getBytes("gameId");
+			ResultSet g = s.getResultSet();
+			g.next();
+			return g.getBytes(1);
 		} catch (SQLException e){
 			throw new RuntimeException(e);
 		}

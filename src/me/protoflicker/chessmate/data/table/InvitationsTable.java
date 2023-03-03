@@ -105,10 +105,11 @@ public class InvitationsTable {
 		String statement =
 				"""
 				INSERT INTO `Invitations` (inviterId, inviteeId, invitationName, expiry, gameName, startingBoard, timeConstraint, timeIncrement, inviterSide)
-				VALUES (?, ?, ?, ?, ?, ?, ?);
+				VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+				RETURNING invitationId;
 				""";
 
-		try (PreparedStatement s = Server.getThreadDatabase().getConnection().prepareStatement(statement, Statement.RETURN_GENERATED_KEYS)){
+		try (PreparedStatement s = Server.getThreadDatabase().getConnection().prepareStatement(statement)){
 			s.setBytes(1, inv.getInviterId());
 			s.setBytes(2, inv.getInviteeId());
 			s.setString(3, inv.getInvitationName());
@@ -118,9 +119,11 @@ public class InvitationsTable {
 			s.setInt(7, inv.getInfo().getTimeConstraint());
 			s.setInt(8, inv.getInfo().getTimeIncrement());
 			s.setInt(9, inv.getInviterSide().getCode());
-			s.executeUpdate();
+			s.execute();
 
-			return s.getGeneratedKeys().getBytes("invitationId");
+			ResultSet g = s.getResultSet();
+			g.next();
+			return g.getBytes(1);
 		} catch (SQLException e){
 			throw new RuntimeException(e);
 		}
@@ -148,7 +151,7 @@ public class InvitationsTable {
 			String statement =
 					"""
 						CREATE TABLE IF NOT EXISTS `Invitations` (
-						invitationId BINARY(16) NOT NULL UNIQUE,
+						invitationId BINARY(16) DEFAULT (UNHEX(REPLACE(UUID(), "-",""))) NOT NULL UNIQUE,
 						inviterId BINARY(16) NOT NULL,
 						inviteeId BINARY(16) NOT NULL,
 						expiry TIMESTAMP NOT NULL,

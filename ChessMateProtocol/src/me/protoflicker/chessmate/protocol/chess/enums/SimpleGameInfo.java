@@ -4,6 +4,7 @@ import lombok.Getter;
 
 import java.io.Serializable;
 import java.sql.Timestamp;
+import java.util.Arrays;
 
 public class SimpleGameInfo implements Serializable {
 
@@ -78,6 +79,6 @@ public class SimpleGameInfo implements Serializable {
 	}
 
 	public boolean isParticipant(byte[] userId){
-		return blackId == userId || whiteId == userId;
+		return Arrays.equals(blackId, userId) || Arrays.equals(whiteId, userId);
 	}
 }

@@ -1,8 +1,9 @@
-package me.protoflicker.chessmate.protocol.packet.game.invitation;
+package me.protoflicker.chessmate.protocol.packet.game.invitation.update;
 
 import lombok.Getter;
 import me.protoflicker.chessmate.protocol.Packet;
 import me.protoflicker.chessmate.protocol.packet.ServerPacket;
+import me.protoflicker.chessmate.protocol.packet.game.invitation.GameInvitation;
 
 public class GameInvitedPacket extends Packet implements ServerPacket {
 
