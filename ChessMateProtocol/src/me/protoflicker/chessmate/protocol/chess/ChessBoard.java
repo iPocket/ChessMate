@@ -7,7 +7,7 @@ import me.protoflicker.chessmate.protocol.chess.enums.GameStatus;
 import me.protoflicker.chessmate.protocol.chess.enums.MoveType;
 import me.protoflicker.chessmate.protocol.chess.enums.PieceType;
 
-import java.io.Serializable;
+import java.io.*;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -17,11 +17,14 @@ import java.util.stream.Collectors;
 
 public class ChessBoard implements Serializable, Cloneable {
 
+	//DO NOT remove this or heavens will fall down
+	private static final long serialVersionUID = 12358903454875L;
+
 	@Getter
 	private ChessPiece[][] board = new ChessPiece[8][8];
 
 	@Getter
-	private final Timestamp startingTime;
+	private Timestamp startingTime;
 
 	@Getter
 	private List<PerformedChessMove> performedMoves = new ArrayList<>();
@@ -34,13 +37,13 @@ public class ChessBoard implements Serializable, Cloneable {
 	private GameStatus gameStatus = GameStatus.ONGOING;
 
 	@Getter
-	private final Map<GameSide, Long> timeRemaining = new HashMap<>();
+	private Map<GameSide, Long> timeRemaining = new HashMap<>();
 
 	@Getter
-	private final long timeConstraint;
+	private long timeConstraint;
 
 	@Getter
-	private final long timeIncrement;
+	private long timeIncrement;
 
 	@Getter
 	@Setter
@@ -127,8 +130,12 @@ public class ChessBoard implements Serializable, Cloneable {
 	}
 
 
+	public ChessPiece getRawPieceAtLocation(ChessPosition pos){
+		return getRawPieceAtLocation(pos.getRank(), pos.getFile());
+	}
+
 	//prohibited
-	private ChessPiece getRawPieceAtLocation(int rank, int file){
+	public ChessPiece getRawPieceAtLocation(int rank, int file){
 		if(rank >= 0 && rank <= 7 && file >= 0 && file <= 7){
 			return board[rank][file];
 		} else {
@@ -245,8 +252,8 @@ public class ChessBoard implements Serializable, Cloneable {
 			}
 
 			case QUEEN -> {
-				moves.addAll(getMoves(piece.getVersion(PieceType.ROOK), considerKings));
-				moves.addAll(getMoves(piece.getVersion(PieceType.BISHOP), considerKings));
+				moves.addAll(getMoves(piece.getVersion(PieceType.ROOK), false, false));
+				moves.addAll(getMoves(piece.getVersion(PieceType.BISHOP), false, false));
 				moves.forEach(m -> m.setPieceMoved(piece.getPiece().getType()));
 				break;
 			}
@@ -327,7 +334,7 @@ public class ChessBoard implements Serializable, Cloneable {
 					}
 				}
 
-				if(loc.getRank() < 7 && loc.getFile() > 0){
+				if(loc.getRank() > 0 && loc.getFile() < 7){
 					for(int i = 1; i <= Math.min(loc.getRank(), Math.abs(loc.getFile() - 7)); i++){
 						to = new ChessPosition(loc.getRank() - i, loc.getFile() + i);
 						addMove(moves, MoveType.MOVE, piece, to);
@@ -371,7 +378,7 @@ public class ChessBoard implements Serializable, Cloneable {
 				}
 
 				int startingRank = piece.getGameSide() == GameSide.WHITE ? 1 : 6;
-				if(loc.getRank() == startingRank){
+				if(loc.getRank() == startingRank && getRawPieceAtLocation(forward.getRank(), forward.getFile()) == null){
 					ChessPosition forwardTwice = new ChessPosition(loc.getRank() + rankChange * 2, loc.getFile());
 					if(getRawPieceAtLocation(forwardTwice.getRank(), forwardTwice.getFile()) == null){
 						addMove(moves, MoveType.MOVE, piece, forwardTwice);
@@ -424,8 +431,12 @@ public class ChessBoard implements Serializable, Cloneable {
 
 	public void initMoves(List<PerformedChessMove> moves){
 		for(PerformedChessMove move : moves){
-			performMove(move.getMove(), move.getTimePlayed());
+			loadMove(move);
 		}
+	}
+
+	public void loadMove(PerformedChessMove move){
+		performMove(move.getMove(), move.getTimePlayed());
 	}
 
 	public void performMove(ChessMove move, Timestamp time){
@@ -448,7 +459,7 @@ public class ChessBoard implements Serializable, Cloneable {
 				if(newType.equals(PieceType.PAWN)){
 					if((to.getRank() == 7 && move.getGameSide().equals(GameSide.WHITE))
 							|| (to.getRank() == 0 && move.getGameSide().equals(GameSide.BLACK))){
-						if(move.getPromotionPiece() == null){
+						if(move.getPromotionPiece() == null || !move.getPromotionPiece().isPiece()){
 							move.setPromotionPiece(PieceType.QUEEN);
 						}
 						newType = move.getPromotionPiece();
@@ -842,4 +853,63 @@ public class ChessBoard implements Serializable, Cloneable {
 			throw new AssertionError();
 		}
 	}
+
+//	@Override
+//	public void writeExternal(ObjectOutput o) throws IOException {
+//		o.writeObject(board);
+//		o.writeObject(startingTime);
+//		writeListToObjectOutput(performedMoves, o);
+//		writeListToObjectOutput(takenPieces, o);
+//		o.writeObject(gameStatus);
+//		writeMapToObjectOutput(timeRemaining, o);
+//		o.writeLong(timeConstraint);
+//		o.writeLong(timeIncrement);
+//		o.writeBoolean(isDummy);
+//	}
+//
+//	@Override
+//	public void readExternal(ObjectInput i) throws IOException, ClassNotFoundException {
+//		board = (ChessPiece[][]) i.readObject();
+//		startingTime = (Timestamp) i.readObject();
+//		readObjectInputToList(performedMoves, i);
+//		readObjectInputToList(takenPieces, i);
+//		gameStatus = (GameStatus) i.readObject();
+//		readObjectInputToMap(timeRemaining, i);
+//		timeConstraint = i.readLong();
+//		timeIncrement = i.readLong();
+//		isDummy = i.readBoolean();
+//	}
+//
+//	public static <T> void writeListToObjectOutput(List<T> list, ObjectOutput output) throws IOException{
+//		output.writeInt(list.size());
+//		for(T element : list){
+//			output.writeObject(element);
+//		}
+//	}
+//
+//	public static <T, K> void writeMapToObjectOutput(Map<T, K> map, ObjectOutput output) throws IOException{
+//		output.writeInt(map.size());
+//		for(Map.Entry<T, K> entry : map.entrySet()){
+//			output.writeObject(entry.getKey());
+//			output.writeObject(entry.getValue());
+//		}
+//	}
+//
+//	public static <T> void readObjectInputToList(List<T> emptyList, ObjectInput input)
+//			throws IOException, ClassNotFoundException{
+//		int entries = input.readInt();
+//		while(entries > 0){
+//			emptyList.add((T) input.readObject());
+//			entries--;
+//		}
+//	}
+//
+//	public static <T, K> void readObjectInputToMap(Map<T, K> emptyMap, ObjectInput input)
+//			throws IOException, ClassNotFoundException{
+//		int entries = input.readInt();
+//		while(entries > 0){
+//			emptyMap.put((T) input.readObject(), (K) input.readObject());
+//			entries--;
+//		}
+//	}
 }

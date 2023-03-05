@@ -133,7 +133,7 @@ public final class MovesTable {
 				timePlayed,
 				new ChessMove(
 					MoveType.getByCode(moveType),
-					moveNumber % 2 == 0 ? GameSide.WHITE : GameSide.BLACK,
+					moveNumber % 2 != 0 ? GameSide.WHITE : GameSide.BLACK,
 					PieceType.getByChessCode(pieceMoved),
 					ChessPosition.fromChessNotation(pieceFrom),
 					ChessPosition.fromChessNotation(pieceTo),

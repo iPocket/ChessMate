@@ -50,6 +50,10 @@ public final class ChessPosition implements Serializable, Cloneable {
 		return new ChessPosition(Integer.parseInt("" + notation.charAt(1)) - 1, ((int) (notation.charAt(0))) - 97);
 	}
 
+	public boolean isWhite(){
+		return rank % 2 == file % 2;
+	}
+
 	@Override
 	public int hashCode(){
 		return Objects.hash(rank, file);

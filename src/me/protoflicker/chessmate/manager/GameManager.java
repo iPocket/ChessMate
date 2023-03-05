@@ -15,25 +15,24 @@ import me.protoflicker.chessmate.protocol.packet.game.request.GameMoveRequestPac
 import me.protoflicker.chessmate.protocol.packet.game.request.GameRequestPacket;
 import me.protoflicker.chessmate.protocol.packet.game.request.GameTimingsRequestPacket;
 import me.protoflicker.chessmate.protocol.packet.game.update.GameNoLongerRunningPacket;
-import me.protoflicker.chessmate.protocol.packet.game.update.GameNotFoundPacket;
 import me.protoflicker.chessmate.protocol.packet.game.update.GameResponsePacket;
+import me.protoflicker.chessmate.protocol.packet.user.UserInfo;
+import me.protoflicker.chessmate.util.Pair;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.WeakHashMap;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class GameManager {
 
 	@Getter
-	private static final Map<byte[], RunningGame> runningGames = Collections.synchronizedMap(new WeakHashMap<>());
+	private static final Map<byte[], RunningGame> runningGames = new ConcurrentHashMap<>();
 
 
 	public static void handleGameRequest(ClientThread c, ClientPacket packet){
 		GameRequestPacket p = (GameRequestPacket) packet;
 
 		GameInfo info;
-		RunningGame game = runningGames.get(p.getGameId());
+		RunningGame game = getRunningGame(p.getGameId());
 		if(game != null){
 			info = game.getInfo();
 		} else {
@@ -47,21 +46,17 @@ public class GameManager {
 			game.addClient(c);
 		}
 
-		if(info != null){
-			c.sendPacket(new GameResponsePacket(p.getGameId(), info, game != null));
-		} else {
-			c.sendPacket(new GameNotFoundPacket(p.getGameId()));
-		}
+		c.sendPacket(new GameResponsePacket(p.getGameId(), info, game != null));
 
 		if(game != null){
-			game.checkTimings();
+			game.tryTimingCheck();
 		}
 	}
 
 	public static void handleMoveRequest(ClientThread c, ClientPacket packet){
 		GameMoveRequestPacket p = (GameMoveRequestPacket) packet;
 
-		RunningGame game = runningGames.get(p.getGameId());
+		RunningGame game = getRunningGame(p.getGameId());
 		if(game != null){
 			game.tryMove(c, p.getMove());
 		}
@@ -70,7 +65,7 @@ public class GameManager {
 	public static void handleDrawDecline(ClientThread c, ClientPacket packet){
 		GameDrawDeclinePacket p = (GameDrawDeclinePacket) packet;
 
-		RunningGame game = runningGames.get(p.getGameId());
+		RunningGame game = getRunningGame(p.getGameId());
 		if(game != null){
 			game.handleDrawDecline(c, p.getSide());
 		}
@@ -79,9 +74,9 @@ public class GameManager {
 	public static void handleTimingsCheck(ClientThread c, ClientPacket packet){
 		GameTimingsRequestPacket p = (GameTimingsRequestPacket) packet;
 
-		RunningGame game = runningGames.get(p.getGameId());
+		RunningGame game = getRunningGame(p.getGameId());
 		if(game != null){
-			game.checkTimings();
+			game.tryTimingCheck();
 		}
 	}
 
@@ -113,8 +108,8 @@ public class GameManager {
 	}
 
 	private static void unloadGame(RunningGame game){
-		//everything should be already saved.
-		runningGames.remove(game.getInfo().getGameId());
+		//everything should be already saved, and nobody should be connected anyways
+		runningGames.keySet().removeIf(id -> Arrays.equals(id, game.getInfo().getGameId()));
 	}
 
 	public static void unloadGameAndKick(RunningGame game){
@@ -124,6 +119,13 @@ public class GameManager {
 		unloadGame(game);
 	}
 
+	private static RunningGame getRunningGame(byte[] gameId){
+		Optional<Map.Entry<byte[], RunningGame>> first = runningGames.entrySet().stream().
+				filter(e -> Arrays.equals(e.getKey(), gameId))
+				.findFirst();
+		return first.map(Map.Entry::getValue).orElse(null);
+	}
+
 
 	private static GameInfo getGameInfo(byte[] gameId){
 		return DataManager.getFullGame(gameId);
@@ -131,7 +133,9 @@ public class GameManager {
 
 	private static RunningGame createRunningGame(GameInfo info){
 		if(info != null){
-			return runningGames.put(info.getGameId(), new RunningGame(info));
+			RunningGame newGame = new RunningGame(info);
+			runningGames.put(info.getGameId(), newGame);
+			return newGame;
 		} else {
 			return null;
 		}

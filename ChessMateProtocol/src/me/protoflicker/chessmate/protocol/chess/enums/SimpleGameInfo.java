@@ -71,11 +71,11 @@ public class SimpleGameInfo implements Serializable {
 	}
 
 	public GameSide getSide(byte[] id){
-		return Arrays.equals(id, whiteId) ? GameSide.WHITE : GameSide.BLACK;
+		return Arrays.equals(id, whiteId) ? GameSide.WHITE : (Arrays.equals(id, blackId) ? GameSide.BLACK : null);
 	}
 
 	public boolean isAuthorised(byte[] userId, GameSide side){
-		return getId(side) == userId;
+		return Arrays.equals(getId(side), userId);
 	}
 
 	public boolean isParticipant(byte[] userId){

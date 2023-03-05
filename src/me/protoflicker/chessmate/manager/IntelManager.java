@@ -15,6 +15,7 @@ import me.protoflicker.chessmate.protocol.packet.user.info.response.UsersInfoRes
 import me.protoflicker.chessmate.protocol.packet.user.info.response.UsersOnlineResponsePacket;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class IntelManager {
@@ -61,7 +62,8 @@ public class IntelManager {
 	public static void handleUsersOnlineRequest(ClientThread c, ClientPacket packet){
 		UsersOnlineRequestPacket p = (UsersOnlineRequestPacket) packet;
 
-		c.sendPacket(new UsersOnlineResponsePacket(LoginManager.getOnlineUsers()));
+		List<byte[]> online = LoginManager.getOnlineUsers();
+		c.sendPacket(new UsersOnlineResponsePacket(online));
 	}
 
 	private static final Map<Class<?>, PacketHandler> packetHandlers = new HashMap<>();

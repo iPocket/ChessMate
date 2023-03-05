@@ -6,12 +6,12 @@ import java.util.HashMap;
 import java.util.Map;
 
 public enum PieceType {
-	KING("King", "K"),
-	QUEEN("Queen", "Q"),
-	ROOK("Rook", "R"),
-	BISHOP("Bishop", "B"),
-	KNIGHT("Knight", "N"),
-	PAWN("Pawn", "P");
+	KING("King", "K", false),
+	QUEEN("Queen", "Q", true),
+	ROOK("Rook", "R", true),
+	BISHOP("Bishop", "B", true),
+	KNIGHT("Knight", "N", true),
+	PAWN("Pawn", "P", false);
 
 	@Getter
 	private final String name;
@@ -19,9 +19,13 @@ public enum PieceType {
 	@Getter
 	private final String code;
 
-	PieceType(String name, String code){
+	@Getter
+	private final boolean isPiece;
+
+	PieceType(String name, String code, boolean isPiece){
 		this.name = name;
 		this.code = code;
+		this.isPiece = isPiece;
 	}
 
 
@@ -35,6 +39,10 @@ public enum PieceType {
 	}
 
 	public static PieceType getByChessCode(String chessCode){
+		if(chessCode == null){
+			return null;
+		}
+
 		return chessCodeMap.get(chessCode.toUpperCase());
 	}
 }

@@ -31,6 +31,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 public class ClientThread extends Thread implements DatabaseContainer {
@@ -66,7 +67,7 @@ public class ClientThread extends Thread implements DatabaseContainer {
 
 	//This usage of Class<?> could raise a lot of potential bugs with ClassLoaders...
 	@Getter
-	private final Map<Class<?>, PacketHandler> packetHandlers = Collections.synchronizedMap(new HashMap<>());
+	private final Map<Class<?>, PacketHandler> packetHandlers = new ConcurrentHashMap<>();
 
 
 	public static String getClientName(Socket socket){
@@ -240,5 +241,6 @@ public class ClientThread extends Thread implements DatabaseContainer {
 
 	private void onDisconnect(){
 		GameManager.onDisconnect(this);
+		LoginManager.onDisconnect(this);
 	}
 }

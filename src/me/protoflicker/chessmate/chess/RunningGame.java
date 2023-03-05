@@ -17,6 +17,7 @@ import me.protoflicker.chessmate.protocol.packet.game.update.*;
 
 import java.sql.Timestamp;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class RunningGame {
 
@@ -27,10 +28,10 @@ public class RunningGame {
 
 	//imagine this as a weak-link HashSet<ClientThread>, Collections#newSetFromMap doesn't exist for some reason
 	@Getter
-	private final Map<ClientThread, Boolean> connected = Collections.synchronizedMap(new WeakHashMap<>());
+	private final Map<ClientThread, Boolean> connected = new ConcurrentHashMap<>();
 
 
-	private final Map<GameSide, Integer> drawRequestAtMove = Collections.synchronizedMap(new HashMap<>());
+	private final Map<GameSide, Integer> drawRequestAtMove = new ConcurrentHashMap<>();
 
 	public RunningGame(GameInfo info){
 		this.info = info;
@@ -64,8 +65,6 @@ public class RunningGame {
 				} else {
 					requestDraw(c, move.getGameSide());
 				}
-			} else {
-				c.sendPacket(new GameMoveInvalidPacket(info.getGameId(), move));
 			}
 		}
 	}

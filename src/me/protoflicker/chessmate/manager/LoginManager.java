@@ -24,15 +24,16 @@ import me.protoflicker.chessmate.protocol.packet.user.setting.response.UserPassw
 
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 public abstract class LoginManager {
 
 	private static final String SALT = "medicbag";
 
-	private static final Map<ClientThread, Long> nextAllowedToLogin = Collections.synchronizedMap(new WeakHashMap<>());
+	private static final Map<ClientThread, Long> nextAllowedToLogin = new ConcurrentHashMap<>();
 
-	private static final Map<ClientThread, byte[]> loggedIn = Collections.synchronizedMap(new WeakHashMap<>());
+	private static final Map<ClientThread, byte[]> loggedIn = new ConcurrentHashMap<>();
 
 	private static String hashPassword(String password){
 		return Hashing.sha256().hashString(password + SALT, StandardCharsets.UTF_8).toString();
@@ -43,7 +44,7 @@ public abstract class LoginManager {
 	}
 
 	public static List<byte[]> getOnlineUsers(){
-		return loggedIn.values().stream().toList();
+		return new ArrayList<>(loggedIn.values());
 	}
 
 	private static void doSuccessfulLogin(ClientThread c, byte[] userId, boolean sendToken, boolean register){
@@ -217,6 +218,11 @@ public abstract class LoginManager {
 
 		TokenTable.removeTokenIfAuthorised(userId, p.getToken());
 		c.tryClose();
+	}
+
+	public static void onDisconnect(ClientThread c){
+		loggedIn.remove(c);
+		nextAllowedToLogin.remove(c);
 	}
 
 

@@ -35,6 +35,10 @@ public class GameInfo implements Serializable {
 		return side == GameSide.WHITE ? whiteId : blackId;
 	}
 
+	public GameSide getSide(byte[] id){
+		return Arrays.equals(id, whiteId) ? GameSide.WHITE : (Arrays.equals(id, blackId) ? GameSide.BLACK : null);
+	}
+
 	public boolean isAuthorised(byte[] userId, GameSide side){
 		return Arrays.equals(getId(side), userId);
 	}
