@@ -55,7 +55,14 @@ public class InvitationManager {
 				if(Arrays.equals(inv.getInviteeId(), userId)){
 					InvitationsTable.removeReceivedInvitation(p.getInvitationId(), userId);
 					byte[] gameId = DataManager.initGameAndGetId(inv);
+					inv.getInfo().setGameId(gameId);
+
 					c.sendPacket(new GameInviteAcceptSuccessfulPacket(inv.getInvitationId(), gameId));
+
+					Set<ClientThread> clients = LoginManager.getClientsById(inv.getInviterId());
+					for(ClientThread client : clients){
+						client.sendPacket(new GameInviteAcceptedPacket(inv, gameId));
+					}
 					return;
 				}
 			}

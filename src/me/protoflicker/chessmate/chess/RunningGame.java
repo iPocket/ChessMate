@@ -52,11 +52,16 @@ public class RunningGame {
 			if(isAuthorised(c, move.getGameSide()) && checkTimings()){
 				if(move.getMoveType() != MoveType.DRAW_AGREEMENT){
 					if(info.getBoard().isValid(move)){
-						info.getBoard().performMove(move, new Timestamp(System.currentTimeMillis()));
+						Timestamp time = new Timestamp(System.currentTimeMillis());
+						info.getBoard().performMove(move, time);
+
+						c.sendPacket(new GameMoveSuccessfulPacket(info.getGameId(), info.getBoard().getLastPerformedMove()));
 
 						broadcastPacket(new GameMoveUpdatePacket(info.getGameId(), info.getBoard().getLastPerformedMove()), List.of(c));
 
-						addMoveToTable(info.getBoard().getLastPerformedMove());
+						if(move.getMoveType().isPieceMove()){
+							addMoveToTable(info.getBoard().getLastPerformedMove());
+						}
 
 						updateGameStatus();
 					} else {
@@ -79,8 +84,11 @@ public class RunningGame {
 							new Timestamp(System.currentTimeMillis()));
 					updateGameStatus();
 				} else {
-					drawRequestAtMove.put(side, info.getBoard().getNumberOfPerformedMoves());
-					broadcastPacket(new GameDrawOfferPacket(info.getGameId(), side), List.of(c));
+					Integer a = drawRequestAtMove.get(side);
+					if(a == null || a != info.getBoard().getNumberOfPerformedMoves()){
+						drawRequestAtMove.put(side, info.getBoard().getNumberOfPerformedMoves());
+						broadcastPacket(new GameDrawOfferPacket(info.getGameId(), side), List.of(c));
+					}
 				}
 			}
 		}

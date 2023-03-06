@@ -2,6 +2,7 @@ package me.protoflicker.chessmate.protocol.chess;
 
 import lombok.Data;
 import lombok.Getter;
+import lombok.Setter;
 
 import java.io.Serializable;
 import java.sql.Timestamp;
@@ -10,6 +11,7 @@ import java.sql.Timestamp;
 public class PerformedChessMove implements Serializable, Cloneable {
 
 	@Getter
+	@Setter
 	private Timestamp timePlayed;
 
 	@Getter

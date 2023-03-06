@@ -1,6 +1,7 @@
 package me.protoflicker.chessmate.protocol.chess.enums;
 
 import lombok.Getter;
+import lombok.Setter;
 
 import java.io.Serializable;
 import java.sql.Timestamp;
@@ -9,7 +10,8 @@ import java.util.Arrays;
 public class SimpleGameInfo implements Serializable {
 
 	@Getter
-	private final byte[] gameId;
+	@Setter
+	private byte[] gameId;
 
 	@Getter
 	private final String gameName;

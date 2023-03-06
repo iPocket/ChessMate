@@ -190,6 +190,9 @@ public class Server {
 
 			//noinspection LoopConditionNotUpdatedInsideLoop
 			while(!clientThreads.isEmpty()){
+				for(ClientThread thread : clientThreads){
+					thread.tryClose();
+				}
 				continue;
 			}
 

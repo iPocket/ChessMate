@@ -7,8 +7,11 @@ import me.protoflicker.chessmate.connection.PacketHandler;
 import me.protoflicker.chessmate.data.DataManager;
 import me.protoflicker.chessmate.protocol.chess.enums.GameInfo;
 import me.protoflicker.chessmate.protocol.chess.enums.GameStatus;
+import me.protoflicker.chessmate.protocol.chess.enums.SimpleGameInfo;
 import me.protoflicker.chessmate.protocol.packet.ClientPacket;
+import me.protoflicker.chessmate.protocol.packet.game.info.GamesOnlineRequestPacket;
 import me.protoflicker.chessmate.protocol.packet.game.info.GamesRequestPacket;
+import me.protoflicker.chessmate.protocol.packet.game.info.response.GamesOnlineResponsePacket;
 import me.protoflicker.chessmate.protocol.packet.game.info.response.GamesResponsePacket;
 import me.protoflicker.chessmate.protocol.packet.game.request.GameDrawDeclinePacket;
 import me.protoflicker.chessmate.protocol.packet.game.request.GameMoveRequestPacket;
@@ -88,6 +91,21 @@ public class GameManager {
 				DataManager.getGamesByUser(p.getUserId())));
 	}
 
+	public static void handleOnlineGamesRequest(ClientThread c, ClientPacket packet){
+		GamesOnlineRequestPacket p = (GamesOnlineRequestPacket) packet;
+		List<SimpleGameInfo> games = new ArrayList<>();
+
+		for(RunningGame game : runningGames.values()){
+			GameInfo i = game.getInfo();
+			games.add(new SimpleGameInfo(i.getGameId(), i.getGameName(), i.getWhiteId(), i.getBlackId(),
+					null, (int) i.getBoard().getTimeConstraint()/1000,
+					(int) i.getBoard().getTimeIncrement()/1000, i.getBoard().getGameStatus(),
+					i.getBoard().getStartingTime(), i.getBoard().getCurrentTurn()));
+		}
+
+		c.sendPacket(new GamesOnlineResponsePacket(games));
+	}
+
 
 
 
@@ -134,6 +152,7 @@ public class GameManager {
 	private static RunningGame createRunningGame(GameInfo info){
 		if(info != null){
 			RunningGame newGame = new RunningGame(info);
+			newGame.checkTimings();
 			runningGames.put(info.getGameId(), newGame);
 			return newGame;
 		} else {
@@ -165,5 +184,6 @@ public class GameManager {
 		packetHandlers.put(GameTimingsRequestPacket.class, GameManager::handleTimingsCheck);
 
 		packetHandlers.put(GamesRequestPacket.class, GameManager::handleGamesRequest);
+		packetHandlers.put(GamesOnlineRequestPacket.class, GameManager::handleOnlineGamesRequest);
 	}
 }
