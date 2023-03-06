@@ -15,7 +15,7 @@ public class Main {
 	public static final String WORKING_DIRECTORY = System.getProperty("user.dir");
 
 	public static final String NAME = "ChessMate";
-	public static final String VERSION = "0.01";
+	public static final String VERSION = "1.0";
 
 	public static final String CONFIG_FOLDER = WORKING_DIRECTORY + File.separator + "config";
 
