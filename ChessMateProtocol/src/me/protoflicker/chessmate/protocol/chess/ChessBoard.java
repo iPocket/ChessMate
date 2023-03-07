@@ -7,12 +7,9 @@ import me.protoflicker.chessmate.protocol.chess.enums.GameStatus;
 import me.protoflicker.chessmate.protocol.chess.enums.MoveType;
 import me.protoflicker.chessmate.protocol.chess.enums.PieceType;
 
-import java.io.*;
+import java.io.Serializable;
 import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class ChessBoard implements Serializable, Cloneable {
@@ -400,13 +397,17 @@ public class ChessBoard implements Serializable, Cloneable {
 
 
 		if(considerKings){
-			moves.removeIf(m -> { //threatens own king
-				ChessBoard newBoard = this.clone();
-				newBoard.setGameStatus(GameStatus.ONGOING);
-				newBoard.setDummy(true);
+			ChessBoard newBoard = this.clone();
+			newBoard.setGameStatus(GameStatus.ONGOING);
+			newBoard.setDummy(true);
+			for (Iterator<ChessMove> iterator = moves.iterator(); iterator.hasNext(); ) {
+				ChessMove m = iterator.next();
 				newBoard.performMove(m, new Timestamp(System.currentTimeMillis()));
-				return newBoard.isKingUnderThreat(piece.getGameSide());
-			});
+				if(newBoard.isKingUnderThreat(piece.getGameSide())){
+					iterator.remove();//threatens own king
+				}
+				newBoard.undoLastMove();
+			}
 		}
 
 		return moves;
@@ -458,8 +459,7 @@ public class ChessBoard implements Serializable, Cloneable {
 				PieceType newType = move.getPieceMoved();
 
 				if(newType.equals(PieceType.PAWN)){
-					if((to.getRank() == 7 && move.getGameSide().equals(GameSide.WHITE))
-							|| (to.getRank() == 0 && move.getGameSide().equals(GameSide.BLACK))){
+					if(move.isPromotion()){
 						if(move.getPromotionPiece() == null || !move.getPromotionPiece().isPiece()){
 							move.setPromotionPiece(PieceType.QUEEN);
 						}
@@ -648,7 +648,11 @@ public class ChessBoard implements Serializable, Cloneable {
 	}
 
 	public ChessPiece getAndRemoveLastTakenPiece(){
-		return takenPieces.remove(takenPieces.size()-1);
+		if(takenPieces.size() >= 1){
+			return takenPieces.remove(takenPieces.size()-1);
+		} else {
+			return null;
+		}
 	}
 
 	public ChessPiece getLastTakenPiece(){
@@ -847,7 +851,7 @@ public class ChessBoard implements Serializable, Cloneable {
 
 	private static List<PerformedChessMove> clonePerformedMoves(List<PerformedChessMove> moves){
 		List<PerformedChessMove> newMoves = new ArrayList<>();
-		for(PerformedChessMove move : moves){
+		for(PerformedChessMove move : new ArrayList<>(moves)){
 			newMoves.add(move.clone());
 		}
 		return newMoves;
@@ -855,7 +859,7 @@ public class ChessBoard implements Serializable, Cloneable {
 
 	private static List<ChessPiece> clonePieces(List<ChessPiece> pieces){
 		List<ChessPiece> newPieces = new ArrayList<>();
-		for(ChessPiece piece : pieces){
+		for(ChessPiece piece : new ArrayList<>(pieces)){
 			newPieces.add(piece.clone());
 		}
 		return newPieces;

@@ -51,20 +51,18 @@ public class InvitationManager {
 		byte[] userId = LoginManager.getUserId(c);
 		if(userId != null){
 			GameInvitation inv = InvitationsTable.getInvitationById(p.getInvitationId());
-			if(inv != null){
-				if(Arrays.equals(inv.getInviteeId(), userId)){
-					InvitationsTable.removeReceivedInvitation(p.getInvitationId(), userId);
-					byte[] gameId = DataManager.initGameAndGetId(inv);
-					inv.getInfo().setGameId(gameId);
+			if(inv != null && Arrays.equals(inv.getInviteeId(), userId)){
+				InvitationsTable.removeReceivedInvitation(p.getInvitationId(), userId);
+				byte[] gameId = DataManager.initGameAndGetId(inv);
+				inv.getInfo().setGameId(gameId);
 
-					c.sendPacket(new GameInviteAcceptSuccessfulPacket(inv.getInvitationId(), gameId));
+				c.sendPacket(new GameInviteAcceptSuccessfulPacket(inv.getInvitationId(), gameId));
 
-					Set<ClientThread> clients = LoginManager.getClientsById(inv.getInviterId());
-					for(ClientThread client : clients){
-						client.sendPacket(new GameInviteAcceptedPacket(inv, gameId));
-					}
-					return;
+				Set<ClientThread> clients = LoginManager.getClientsById(inv.getInviterId());
+				for(ClientThread client : clients){
+					client.sendPacket(new GameInviteAcceptedPacket(inv, gameId));
 				}
+				return;
 			}
 		}
 

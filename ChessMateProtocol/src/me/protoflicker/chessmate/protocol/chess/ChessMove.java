@@ -45,6 +45,11 @@ public class ChessMove implements Serializable, Cloneable {
 		this.promotionPiece = promotionPiece;
 	}
 
+	public boolean isPromotion(){
+		return pieceMoved == PieceType.PAWN && pieceTo != null
+				&& ((gameSide == GameSide.WHITE && pieceTo.getRank() == 7) || (gameSide == GameSide.BLACK && pieceTo.getRank() == 0));
+	}
+
 	@Override
 	public boolean equals(Object obj){
 		if(obj == this){

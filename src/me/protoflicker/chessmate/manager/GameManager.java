@@ -13,14 +13,9 @@ import me.protoflicker.chessmate.protocol.packet.game.info.GamesOnlineRequestPac
 import me.protoflicker.chessmate.protocol.packet.game.info.GamesRequestPacket;
 import me.protoflicker.chessmate.protocol.packet.game.info.response.GamesOnlineResponsePacket;
 import me.protoflicker.chessmate.protocol.packet.game.info.response.GamesResponsePacket;
-import me.protoflicker.chessmate.protocol.packet.game.request.GameDrawDeclinePacket;
-import me.protoflicker.chessmate.protocol.packet.game.request.GameMoveRequestPacket;
-import me.protoflicker.chessmate.protocol.packet.game.request.GameRequestPacket;
-import me.protoflicker.chessmate.protocol.packet.game.request.GameTimingsRequestPacket;
+import me.protoflicker.chessmate.protocol.packet.game.request.*;
 import me.protoflicker.chessmate.protocol.packet.game.update.GameNoLongerRunningPacket;
 import me.protoflicker.chessmate.protocol.packet.game.update.GameResponsePacket;
-import me.protoflicker.chessmate.protocol.packet.user.UserInfo;
-import me.protoflicker.chessmate.util.Pair;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -62,6 +57,15 @@ public class GameManager {
 		RunningGame game = getRunningGame(p.getGameId());
 		if(game != null){
 			game.tryMove(c, p.getMove());
+		}
+	}
+
+	public static void handlePremoveRequest(ClientThread c, ClientPacket packet){
+		GamePremoveSubmitPacket p = (GamePremoveSubmitPacket) packet;
+
+		RunningGame game = getRunningGame(p.getGameId());
+		if(game != null){
+			game.tryPremove(c, p.getPremove());
 		}
 	}
 
@@ -180,6 +184,7 @@ public class GameManager {
 	private static void initHandlers(){
 		packetHandlers.put(GameRequestPacket.class, GameManager::handleGameRequest);
 		packetHandlers.put(GameMoveRequestPacket.class, GameManager::handleMoveRequest);
+		packetHandlers.put(GamePremoveSubmitPacket.class, GameManager::handlePremoveRequest);
 		packetHandlers.put(GameDrawDeclinePacket.class, GameManager::handleDrawDecline);
 		packetHandlers.put(GameTimingsRequestPacket.class, GameManager::handleTimingsCheck);
 
