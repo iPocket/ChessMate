@@ -566,7 +566,7 @@ public class ChessBoard implements Serializable, Cloneable {
 	//for experimental purposes
 	public ChessMove tryGetValidMove(ChessPosition from, ChessPosition to){
 		LocatableChessPiece piece = getPieceAtLocation(from);
-		if(piece != null){
+		if(piece != null && getCurrentTurn() == piece.getGameSide()){
 			List<ChessMove> moves = getMoves(piece);
 			for(ChessMove move : moves){
 				if(move.getPieceTo().equals(to)){

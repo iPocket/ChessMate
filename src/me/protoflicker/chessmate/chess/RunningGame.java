@@ -100,9 +100,8 @@ public class RunningGame {
 			if(move != null){
 				move.setPromotionPiece(premove.getPromotionPiece());
 				performMove(new ArrayList<>(), move, time);
-			} else {
-				premoves.remove(side);
 			}
+			premoves.remove(side);
 		}
 	}
 
