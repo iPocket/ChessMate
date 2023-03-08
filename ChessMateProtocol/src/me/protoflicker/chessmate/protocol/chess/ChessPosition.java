@@ -51,7 +51,7 @@ public final class ChessPosition implements Serializable, Cloneable {
 	}
 
 	public boolean isWhite(){
-		return rank % 2 == file % 2;
+		return rank % 2 != file % 2;
 	}
 
 	@Override

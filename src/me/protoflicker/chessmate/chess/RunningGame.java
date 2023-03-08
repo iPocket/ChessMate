@@ -2,6 +2,7 @@ package me.protoflicker.chessmate.chess;
 
 import lombok.Getter;
 import me.protoflicker.chessmate.connection.ClientThread;
+import me.protoflicker.chessmate.data.DataManager;
 import me.protoflicker.chessmate.data.table.GameTable;
 import me.protoflicker.chessmate.data.table.MovesTable;
 import me.protoflicker.chessmate.manager.GameManager;
@@ -108,11 +109,16 @@ public class RunningGame {
 	public void requestDraw(ClientThread c, GameSide side){
 		synchronized(locker) {
 			if(isAuthorised(c, side) && checkTimings()){
-				Integer otherLast = drawRequestAtMove.getOrDefault(side.getOpposite(), 0);
+				Integer otherLast = drawRequestAtMove.getOrDefault(side.getOpposite(), -1);
 				if(info.getBoard().getNumberOfPerformedMoves() == otherLast){
 					info.getBoard().performMove(new ChessMove(MoveType.DRAW_AGREEMENT, null, null, null, null),
 							new Timestamp(System.currentTimeMillis()));
 					updateGameStatus();
+				} else if(info.getBoard().getNumberOfPerformedMoves() <= 1) {
+					info.getBoard().performMove(new ChessMove(MoveType.DRAW_AGREEMENT, null, null, null, null),
+							new Timestamp(System.currentTimeMillis()));
+					updateGameStatus();
+					DataManager.deleteGame(info.getGameId());
 				} else {
 					Integer a = drawRequestAtMove.get(side);
 					if(a == null || a != info.getBoard().getNumberOfPerformedMoves()){

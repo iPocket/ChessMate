@@ -31,9 +31,12 @@ public class InvitationManager {
 				&& !Arrays.equals(inv.getInviterId(), inv.getInviteeId())
 				&& UserTable.getUsername(inv.getInviteeId()) != null){
 			byte[] invitationId = InvitationsTable.createInvitationAndGetId(inv);
+			inv.setInvitationId(invitationId);
+
+
 			c.sendPacket(new GameInviteSuccessfulPacket(inv));
 
-			inv.setInvitationId(invitationId);
+
 
 			Set<ClientThread> clients = LoginManager.getClientsById(inv.getInviteeId());
 			for(ClientThread client : clients){

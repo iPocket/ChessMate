@@ -155,10 +155,85 @@ public class DataManager {
 		return games;
 	}
 
+	public static List<SimpleGameInfo> getRunningGames(){
+		List<byte[]> ids = new ArrayList<>();
+		List<SimpleGameInfo> games = new ArrayList<>();
+
+		{
+			String statement =
+					"""
+							SELECT gameId
+							FROM `Games`
+							WHERE status = 0;
+							"""; //0 for ongoing
+			try (PreparedStatement s = Server.getThreadDatabase().getConnection().prepareStatement(statement)) {
+				ResultSet r = s.executeQuery();
+				while(r.next()){
+					ids.add(r.getBytes(1));
+				}
+			} catch(SQLException e){
+				throw new RuntimeException(e);
+			}
+		}
+
+		for(byte[] id : ids){
+			games.add(getSimpleGame(id));
+		}
+
+		return games;
+	}
+
 	public static byte[] initGameAndGetId(GameInvitation inv){
 		byte[] gameId = GameTable.createGameAndGetId(inv.getInfo());
 		ParticipationTable.createParticipation(gameId, inv.getInfo().getWhiteId(), inv.getInfo().getBlackId());
 		return gameId;
+	}
+
+	public static void deleteGame(byte[] gameId){
+		{
+			String statement =
+					"""
+							DELETE
+							FROM `Participations`
+							WHERE gameId = ?
+							""";
+			try (PreparedStatement s = Server.getThreadDatabase().getConnection().prepareStatement(statement)) {
+				s.setBytes(1, gameId);
+				s.executeUpdate();
+			} catch(SQLException e){
+				throw new RuntimeException(e);
+			}
+		}
+
+		{
+			String statement =
+					"""
+							DELETE
+							FROM `Moves`
+							WHERE gameId = ?
+							""";
+			try (PreparedStatement s = Server.getThreadDatabase().getConnection().prepareStatement(statement)) {
+				s.setBytes(1, gameId);
+				s.executeUpdate();
+			} catch(SQLException e){
+				throw new RuntimeException(e);
+			}
+		}
+
+		{
+			String statement =
+					"""
+							DELETE
+							FROM `Games`
+							WHERE gameId = ?
+							""";
+			try (PreparedStatement s = Server.getThreadDatabase().getConnection().prepareStatement(statement)) {
+				s.setBytes(1, gameId);
+				s.executeUpdate();
+			} catch(SQLException e){
+				throw new RuntimeException(e);
+			}
+		}
 	}
 
 	public static void createTables(Database database){

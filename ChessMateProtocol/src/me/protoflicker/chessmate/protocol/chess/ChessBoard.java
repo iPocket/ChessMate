@@ -217,7 +217,9 @@ public class ChessBoard implements Serializable, Cloneable {
 							piece.getGameSide()).stream().filter(r -> r.getPosition().getRank() == loc.getRank()).collect(Collectors.toList());
 
 					for(LocatableChessPiece rook : rooks){
-						if(performedMoves.stream().noneMatch(p -> p.getMove().getMoveType() == MoveType.CASTLE || p.getMove().getPieceFrom().equals(rook.getPosition()) ||
+						if(performedMoves.stream().noneMatch(p ->
+								(p.getMove().getMoveType() == MoveType.CASTLE && p.getMove().getGameSide() == piece.getGameSide())
+										|| p.getMove().getPieceFrom().equals(rook.getPosition()) ||
 								p.getMove().getPieceTo().equals(rook.getPosition()))){
 							boolean canCastle = true;
 

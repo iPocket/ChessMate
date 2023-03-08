@@ -99,15 +99,25 @@ public class GameManager {
 		GamesOnlineRequestPacket p = (GamesOnlineRequestPacket) packet;
 		List<SimpleGameInfo> games = new ArrayList<>();
 
-		for(RunningGame game : runningGames.values()){
-			GameInfo i = game.getInfo();
-			games.add(new SimpleGameInfo(i.getGameId(), i.getGameName(), i.getWhiteId(), i.getBlackId(),
-					null, (int) i.getBoard().getTimeConstraint()/1000,
-					(int) i.getBoard().getTimeIncrement()/1000, i.getBoard().getGameStatus(),
-					i.getBoard().getStartingTime(), i.getBoard().getCurrentTurn()));
-		}
+//		for(RunningGame game : runningGames.values()){
+//			GameInfo i = game.getInfo();
+//			games.add(new SimpleGameInfo(i.getGameId(), i.getGameName(), i.getWhiteId(), i.getBlackId(),
+//					null, (int) i.getBoard().getTimeConstraint()/1000,
+//					(int) i.getBoard().getTimeIncrement()/1000, i.getBoard().getGameStatus(),
+//					i.getBoard().getStartingTime(), i.getBoard().getCurrentTurn()));
+//		}
+//
+//		c.sendPacket(new GamesOnlineResponsePacket(games));
 
-		c.sendPacket(new GamesOnlineResponsePacket(games));
+		c.sendPacket(new GamesOnlineResponsePacket(DataManager.getRunningGames()));
+	}
+
+	public static void handleGameDisconnect(ClientThread c, ClientPacket packet){
+		GameDisconnectPacket p = (GameDisconnectPacket) packet;
+		RunningGame game = getRunningGame(p.getGameId());
+		if(game != null){
+			removeClientFromGame(c, game);
+		}
 	}
 
 
@@ -190,5 +200,7 @@ public class GameManager {
 
 		packetHandlers.put(GamesRequestPacket.class, GameManager::handleGamesRequest);
 		packetHandlers.put(GamesOnlineRequestPacket.class, GameManager::handleOnlineGamesRequest);
+
+		packetHandlers.put(GameDisconnectPacket.class, GameManager::handleGameDisconnect);
 	}
 }
