@@ -162,9 +162,8 @@ public class RunningGame {
 		info.getBoard().performMove(move, time);
 		PerformedChessMove per = info.getBoard().getLastPerformedMove();
 
-		broadcastPacket(new GameMoveUpdatePacket(info.getGameId(), info.getBoard().getLastPerformedMove()), exempt);
-
 		if(move.getMoveType().isPieceMove()){
+			broadcastPacket(new GameMoveUpdatePacket(info.getGameId(), info.getBoard().getLastPerformedMove()), exempt);
 			addMoveToTable(info.getBoard().getLastPerformedMove());
 		}
 

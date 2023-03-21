@@ -719,7 +719,7 @@ public class ChessBoard implements Serializable, Cloneable {
 	}
 
 	public long getTimeTakenForLastMove(){
-		if(performedMoves.size() <= 1){
+		if(performedMoves.size() <= 2){
 //			return getLastPerformedMove().getTimePlayed().getTime() - startingTime.getTime();
 			return 0;
 		} else {
@@ -728,8 +728,8 @@ public class ChessBoard implements Serializable, Cloneable {
 	}
 
 	public long getTimeOfLastMove(){
-		if(performedMoves.size() == 0){
-			return System.currentTimeMillis(); //well no move was made, maybe refractor this elsewhere
+		if(performedMoves.size() <= 1){
+			return System.currentTimeMillis(); //well one or zero moves were made, maybe refractor this elsewhere
 		} else {
 			return getLastPerformedMove().getTimePlayed().getTime();
 		}

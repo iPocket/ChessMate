@@ -33,6 +33,8 @@ public abstract class LoginManager {
 
 	private static final Map<ClientThread, Long> nextAllowedToLogin = new ConcurrentHashMap<>();
 
+	private static final Map<ClientThread, Long> nextAllowedToLoginByToken = new ConcurrentHashMap<>();
+
 	private static final Map<ClientThread, byte[]> loggedIn = new ConcurrentHashMap<>();
 
 	private static String hashPassword(String password){
@@ -133,7 +135,7 @@ public abstract class LoginManager {
 			return;
 		}
 		
-		Long time = nextAllowedToLogin.get(c);
+		Long time = nextAllowedToLoginByToken.get(c);
 		if(time == null || System.currentTimeMillis() >= time){ //vulnerability: nullables could be exploited to just break things
 			byte[] userId = TokenTable.getUserIdByToken(p.getToken());
 			if(userId != null){
@@ -142,7 +144,7 @@ public abstract class LoginManager {
 			}
 
 			c.sendPacket(new LoginUnsuccessfulPacket());
-			nextAllowedToLogin.put(c, System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(30));
+			nextAllowedToLoginByToken.put(c, System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(30));
 		} else {
 			c.sendPacket(new LoginThrottledPacket());
 		}
