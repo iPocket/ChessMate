@@ -45,8 +45,8 @@ public abstract class LoginManager {
 		return hashPassword(givenPassword).equals(UserTable.getHashedPassword(userId));
 	}
 
-	public static List<byte[]> getOnlineUsers(){
-		return new ArrayList<>(loggedIn.values());
+	public static Set<byte[]> getOnlineUsers(){
+		return new HashSet<>(loggedIn.values());
 	}
 
 	private static void doSuccessfulLogin(ClientThread c, byte[] userId, boolean sendToken, boolean register){

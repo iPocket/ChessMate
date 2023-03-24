@@ -5,7 +5,7 @@ import me.protoflicker.chessmate.protocol.Packet;
 import me.protoflicker.chessmate.protocol.chess.enums.SimpleGameInfo;
 import me.protoflicker.chessmate.protocol.packet.ServerPacket;
 
-import java.util.List;
+import java.util.Set;
 
 public class GamesResponsePacket extends Packet implements ServerPacket {
 
@@ -13,9 +13,9 @@ public class GamesResponsePacket extends Packet implements ServerPacket {
 	private final byte[] userId;
 
 	@Getter
-	private final List<SimpleGameInfo> games;
+	private final Set<SimpleGameInfo> games;
 
-	public GamesResponsePacket(byte[] userId, List<SimpleGameInfo> games){
+	public GamesResponsePacket(byte[] userId, Set<SimpleGameInfo> games){
 		this.userId = userId;
 		this.games = games;
 	}

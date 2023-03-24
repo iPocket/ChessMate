@@ -12,8 +12,8 @@ import me.protoflicker.chessmate.protocol.chess.enums.SimpleGameInfo;
 import me.protoflicker.chessmate.protocol.packet.game.invitation.GameInvitation;
 
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 public class DataManager {
 
@@ -125,9 +125,9 @@ public class DataManager {
 				MovesTable.getNumberOfMoves(gameId) % 2 == 0 ? GameSide.WHITE : GameSide.BLACK);
 	}
 
-	public static List<SimpleGameInfo> getGamesByUser(byte[] userId){
-		List<byte[]> ids = new ArrayList<>();
-		List<SimpleGameInfo> games = new ArrayList<>();
+	public static Set<SimpleGameInfo> getGamesByUser(byte[] userId){
+		Set<byte[]> ids = new HashSet<>();
+		Set<SimpleGameInfo> games = new HashSet<>();
 		//query game ids by user, getSimpleGame() for each and return
 
 		{
@@ -155,9 +155,9 @@ public class DataManager {
 		return games;
 	}
 
-	public static List<SimpleGameInfo> getRunningGames(){
-		List<byte[]> ids = new ArrayList<>();
-		List<SimpleGameInfo> games = new ArrayList<>();
+	public static Set<SimpleGameInfo> getRunningGames(){
+		Set<byte[]> ids = new HashSet<>();
+		Set<SimpleGameInfo> games = new HashSet<>();
 
 		{
 			String statement =

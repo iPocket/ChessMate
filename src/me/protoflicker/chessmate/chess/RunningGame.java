@@ -18,9 +18,9 @@ import me.protoflicker.chessmate.protocol.packet.ServerPacket;
 import me.protoflicker.chessmate.protocol.packet.game.update.*;
 
 import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class RunningGame {
@@ -61,7 +61,7 @@ public class RunningGame {
 			if(isAuthorised(c, move.getGameSide()) && checkTimings()){
 				if(move.getMoveType() != MoveType.DRAW_AGREEMENT){
 					if(info.getBoard().isValid(move)){
-						PerformedChessMove per = performMove(List.of(c), move, time);
+						PerformedChessMove per = performMove(Set.of(c), move, time);
 						c.sendPacket(new GameMoveSuccessfulPacket(info.getGameId(), per));
 						premoves.remove(move.getGameSide());
 						tryPerformPremove(move.getGameSide().getOpposite(), time);
@@ -99,7 +99,7 @@ public class RunningGame {
 			ChessMove move = info.getBoard().tryGetValidMove(premove.getPieceFrom(), premove.getPieceTo());
 			if(move != null){
 				move.setPromotionPiece(premove.getPromotionPiece());
-				performMove(new ArrayList<>(), move, time);
+				performMove(new HashSet<>(), move, time);
 			}
 			premoves.remove(side);
 		}
@@ -122,7 +122,7 @@ public class RunningGame {
 					Integer a = drawRequestAtMove.get(side);
 					if(a == null || a != info.getBoard().getNumberOfPerformedMoves()){
 						drawRequestAtMove.put(side, info.getBoard().getNumberOfPerformedMoves());
-						broadcastPacket(new GameDrawOfferPacket(info.getGameId(), side), List.of(c));
+						broadcastPacket(new GameDrawOfferPacket(info.getGameId(), side), Set.of(c));
 					}
 				}
 			}
@@ -134,7 +134,7 @@ public class RunningGame {
 			if(isAuthorised(c, side)){
 				Integer otherLast = drawRequestAtMove.getOrDefault(side.getOpposite(), 0);
 				if(info.getBoard().getNumberOfPerformedMoves() == otherLast){
-					broadcastPacket(new GameDrawDeclinedPacket(info.getGameId(), side), List.of(c));
+					broadcastPacket(new GameDrawDeclinedPacket(info.getGameId(), side), Set.of(c));
 				}
 			}
 		}
@@ -158,7 +158,7 @@ public class RunningGame {
 		MovesTable.addMove(info.getGameId(), move, info.getBoard().getPerformedMoves().indexOf(move)+1);
 	}
 
-	private PerformedChessMove performMove(List<ClientThread> exempt, ChessMove move, Timestamp time){
+	private PerformedChessMove performMove(Set<ClientThread> exempt, ChessMove move, Timestamp time){
 		info.getBoard().performMove(move, time);
 		PerformedChessMove per = info.getBoard().getLastPerformedMove();
 
@@ -172,10 +172,10 @@ public class RunningGame {
 	}
 
 	public void broadcastPacket(ServerPacket packet){
-		broadcastPacket(packet, new ArrayList<>());
+		broadcastPacket(packet, new HashSet<>());
 	}
 
-	public void broadcastPacket(ServerPacket packet, List<ClientThread> exempt){
+	public void broadcastPacket(ServerPacket packet, Set<ClientThread> exempt){
 		for(ClientThread c : connected.keySet()){
 			if(!exempt.contains(c)){
 				c.sendPacket(packet);

@@ -7,8 +7,8 @@ import me.protoflicker.chessmate.protocol.chess.enums.GameSide;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 public final class ParticipationTable {
 
@@ -122,8 +122,8 @@ public final class ParticipationTable {
 		}
 	}
 
-	public static List<byte[]> getGameIdsByUser(byte[] userId){
-		List<byte[]> gameIds = new ArrayList<>();
+	public static Set<byte[]> getGameIdsByUser(byte[] userId){
+		Set<byte[]> gameIds = new HashSet<>();
 
 		String statement =
 				"""

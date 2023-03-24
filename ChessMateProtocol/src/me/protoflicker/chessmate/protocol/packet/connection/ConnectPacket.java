@@ -6,7 +6,7 @@ import me.protoflicker.chessmate.protocol.packet.ClientPacket;
 
 public class ConnectPacket extends Packet implements ClientPacket {
 
-	public static final String PROTOCOL_VERSION = "0.4";
+	public static final String PROTOCOL_VERSION = "0.5";
 
 	@Getter
 	private final String expectedVersion;

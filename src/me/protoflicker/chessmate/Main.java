@@ -28,12 +28,13 @@ public class Main {
 		Logger.getInstance().log("Starting " + NAME + " v" + VERSION + "...");
 
 		CONSOLE_THREAD = new ConsoleThread();
-		CONSOLE_THREAD.start();
+//		CONSOLE_THREAD.start();
 
 		Logger.getInstance().log("Loading config file...");
 
 		JSONConfig config = getConfig(args);
 
+		Logger.getInstance().setDebug(Boolean.TRUE.equals(config.getByPointer("console.debug")));
 		Server.init(config);
 		Server.getInstance().start();
 	}
@@ -74,7 +75,7 @@ public class Main {
 
 		try {
 			if(configFile.createNewFile()){
-				URL defaultConfigUrl = Main.class.getClassLoader().getResource("config.json");
+				URL defaultConfigUrl = Main.class.getClassLoader().getResource("config.json"); //TODO: Use resource stream so that this works in .jar
 				assert defaultConfigUrl != null; //config file should always exist in the bundled resources root
 				File defaultConfigFile = new File(defaultConfigUrl.toURI());
 				Files.copy(defaultConfigFile.toPath(), configFile.toPath(), StandardCopyOption.REPLACE_EXISTING);

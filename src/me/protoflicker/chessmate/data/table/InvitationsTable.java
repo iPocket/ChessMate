@@ -7,9 +7,12 @@ import me.protoflicker.chessmate.protocol.chess.enums.GameSide;
 import me.protoflicker.chessmate.protocol.chess.enums.SimpleGameInfo;
 import me.protoflicker.chessmate.protocol.packet.game.invitation.GameInvitation;
 
-import java.sql.*;
-import java.util.ArrayList;
-import java.util.List;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 public class InvitationsTable {
@@ -46,8 +49,8 @@ public class InvitationsTable {
 	}
 
 
-	public static List<GameInvitation> getInvitationsByInviteeId(byte[] inviteeId){
-		List<GameInvitation> invitations = new ArrayList<>();
+	public static Set<GameInvitation> getInvitationsByInviteeId(byte[] inviteeId){
+		Set<GameInvitation> invitations = new HashSet<>();
 
 		String statement =
 				"""

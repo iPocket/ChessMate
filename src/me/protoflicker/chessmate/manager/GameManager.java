@@ -7,7 +7,6 @@ import me.protoflicker.chessmate.connection.PacketHandler;
 import me.protoflicker.chessmate.data.DataManager;
 import me.protoflicker.chessmate.protocol.chess.enums.GameInfo;
 import me.protoflicker.chessmate.protocol.chess.enums.GameStatus;
-import me.protoflicker.chessmate.protocol.chess.enums.SimpleGameInfo;
 import me.protoflicker.chessmate.protocol.packet.ClientPacket;
 import me.protoflicker.chessmate.protocol.packet.game.info.GamesOnlineRequestPacket;
 import me.protoflicker.chessmate.protocol.packet.game.info.GamesRequestPacket;
@@ -17,7 +16,10 @@ import me.protoflicker.chessmate.protocol.packet.game.request.*;
 import me.protoflicker.chessmate.protocol.packet.game.update.GameNoLongerRunningPacket;
 import me.protoflicker.chessmate.protocol.packet.game.update.GameResponsePacket;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class GameManager {
@@ -97,7 +99,6 @@ public class GameManager {
 
 	public static void handleOnlineGamesRequest(ClientThread c, ClientPacket packet){
 		GamesOnlineRequestPacket p = (GamesOnlineRequestPacket) packet;
-		List<SimpleGameInfo> games = new ArrayList<>();
 
 //		for(RunningGame game : runningGames.values()){
 //			GameInfo i = game.getInfo();
@@ -140,7 +141,7 @@ public class GameManager {
 	}
 
 	private static void unloadGame(RunningGame game){
-		//everything should be already saved, and nobody should be connected anyways
+		//everything should be already saved, and nobody should be connected
 		runningGames.keySet().removeIf(id -> Arrays.equals(id, game.getInfo().getGameId()));
 	}
 

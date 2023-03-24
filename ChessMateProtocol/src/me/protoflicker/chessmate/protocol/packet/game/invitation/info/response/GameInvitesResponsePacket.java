@@ -5,7 +5,7 @@ import me.protoflicker.chessmate.protocol.Packet;
 import me.protoflicker.chessmate.protocol.packet.ServerPacket;
 import me.protoflicker.chessmate.protocol.packet.game.invitation.GameInvitation;
 
-import java.util.List;
+import java.util.Set;
 
 public class GameInvitesResponsePacket extends Packet implements ServerPacket {
 
@@ -13,9 +13,9 @@ public class GameInvitesResponsePacket extends Packet implements ServerPacket {
 	private final byte[] userId;
 
 	@Getter
-	private final List<GameInvitation> invitations;
+	private final Set<GameInvitation> invitations;
 
-	public GameInvitesResponsePacket(byte[] userId, List<GameInvitation> invitations){
+	public GameInvitesResponsePacket(byte[] userId, Set<GameInvitation> invitations){
 		this.userId = userId;
 		this.invitations = invitations;
 	}

@@ -10,11 +10,14 @@ import me.protoflicker.chessmate.protocol.chess.enums.PieceType;
 import java.io.Serializable;
 import java.sql.Timestamp;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 public class ChessBoard implements Serializable, Cloneable {
 
 	//DO NOT remove this or heavens will fall down
+	//manual serial UID for serialization since this class is too complicated for multiple compilers
+	//- to produce the same UID for comparison
 	private static final long serialVersionUID = 12358903454875L;
 
 	@Getter
@@ -34,7 +37,7 @@ public class ChessBoard implements Serializable, Cloneable {
 	private GameStatus gameStatus = GameStatus.ONGOING;
 
 	@Getter
-	private Map<GameSide, Long> timeToMove = new HashMap<>();
+	private Map<GameSide, Long> timeToMove = new ConcurrentHashMap<>();
 
 	@Getter
 	private int timeConstraint;
@@ -90,39 +93,39 @@ public class ChessBoard implements Serializable, Cloneable {
 //	}
 
 	//experimental
-	private List<ChessPiece> findRawPieces(GameSide side){
-		List<ChessPiece> list = new ArrayList<>();
+	private Set<ChessPiece> findRawPieces(GameSide side){
+		Set<ChessPiece> set = new HashSet<>();
 		for(int i = 0; i < 8; i++){
 			for(int j = 0; j < 8; j++){
 				ChessPiece piece = board[i][j];
 				if(piece != null && (side == null || piece.getGameSide().equals(side))){
-					list.add(piece);
+					set.add(piece);
 				}
 			}
 		}
 
-		return list;
+		return set;
 	}
 
-	public List<LocatableChessPiece> findPieces(PieceType type, GameSide side){
-		List<LocatableChessPiece> list = new ArrayList<>();
+	public Set<LocatableChessPiece> findPieces(PieceType type, GameSide side){
+		Set<LocatableChessPiece> set = new HashSet<>();
 		for(int i = 0; i < 8; i++){
 			for(int j = 0; j < 8; j++){
 				ChessPiece piece = board[i][j];
 				if(piece != null && (type == null || piece.getType().equals(type)) && (side == null || piece.getGameSide().equals(side))){
-					list.add(new LocatableChessPiece(piece, new ChessPosition(i, j)));
+					set.add(new LocatableChessPiece(piece, new ChessPosition(i, j)));
 				}
 			}
 		}
 
-		return list;
+		return set;
 	}
 
-	public List<LocatableChessPiece> findPieces(GameSide side){
+	public Set<LocatableChessPiece> findPieces(GameSide side){
 		return findPieces(null, side);
 	}
 
-	public List<LocatableChessPiece> findPieces(PieceType type){
+	public Set<LocatableChessPiece> findPieces(PieceType type){
 		return findPieces(type, null);
 	}
 
@@ -157,7 +160,7 @@ public class ChessBoard implements Serializable, Cloneable {
 		return getPieceAtLocation(new ChessPosition(rank, file));
 	}
 
-	public List<LocatableChessPiece> getKings(GameSide gameSide){
+	public Set<LocatableChessPiece> getKings(GameSide gameSide){
 		return findPieces(PieceType.KING, gameSide);
 	}
 
@@ -181,22 +184,22 @@ public class ChessBoard implements Serializable, Cloneable {
 		return performedMoves.size();
 	}
 
-	public List<ChessMove> getMoves(LocatableChessPiece piece){
+	public Set<ChessMove> getMoves(LocatableChessPiece piece){
 		return getMoves(piece, true, true);
 	}
 
-	public List<ChessMove> getThreateningMoves(LocatableChessPiece piece){
+	public Set<ChessMove> getThreateningMoves(LocatableChessPiece piece){
 		return getMoves(piece, true, false);
 	}
 
-	public List<ChessMove> getMoves(LocatableChessPiece piece, boolean considerKings){
+	public Set<ChessMove> getMoves(LocatableChessPiece piece, boolean considerKings){
 		return getMoves(piece, considerKings, true);
 	}
 
 
-	public List<ChessMove> getMoves(LocatableChessPiece piece, boolean considerKings, boolean includeCastle){
+	public Set<ChessMove> getMoves(LocatableChessPiece piece, boolean considerKings, boolean includeCastle){
 		ChessPosition loc = piece.getPosition();
-		List<ChessMove> moves = new ArrayList<>();
+		Set<ChessMove> moves = new HashSet<>();
 
 		switch(piece.getType()){
 
@@ -213,8 +216,8 @@ public class ChessBoard implements Serializable, Cloneable {
 				if(includeCastle && considerKings && !isUnderThreat(piece, false)
 						&& performedMoves.stream().noneMatch(p ->  p.getMove().getPieceFrom().equals(loc)
 						|| p.getMove().getPieceTo().equals(loc))){
-					List<LocatableChessPiece> rooks = findPieces(PieceType.ROOK,
-							piece.getGameSide()).stream().filter(r -> r.getPosition().getRank() == loc.getRank()).collect(Collectors.toList());
+					Set<LocatableChessPiece> rooks = findPieces(PieceType.ROOK,
+							piece.getGameSide()).stream().filter(r -> r.getPosition().getRank() == loc.getRank()).collect(Collectors.toSet());
 
 					for(LocatableChessPiece rook : rooks){
 						if(performedMoves.stream().noneMatch(p ->
@@ -415,7 +418,7 @@ public class ChessBoard implements Serializable, Cloneable {
 		return moves;
 	}
 
-	private void addMove(List<ChessMove> moves, MoveType moveType, LocatableChessPiece piece, ChessPosition to){
+	private void addMove(Set<ChessMove> moves, MoveType moveType, LocatableChessPiece piece, ChessPosition to){
 		if(to.getRank() >= 0 && to.getRank() <= 7 && to.getFile() >= 0 && to.getFile() <= 7){
 			LocatableChessPiece r = getPieceAtLocation(to);
 			if(moveType.equals(MoveType.MOVE) && r != null){
@@ -567,7 +570,7 @@ public class ChessBoard implements Serializable, Cloneable {
 	public ChessMove tryGetValidMove(ChessPosition from, ChessPosition to){
 		LocatableChessPiece piece = getPieceAtLocation(from);
 		if(piece != null && getCurrentTurn() == piece.getGameSide()){
-			List<ChessMove> moves = getMoves(piece);
+			Set<ChessMove> moves = getMoves(piece);
 			for(ChessMove move : moves){
 				if(move.getPieceTo().equals(to)){
 					return move;
@@ -674,7 +677,7 @@ public class ChessBoard implements Serializable, Cloneable {
 	}
 
 	public boolean isUnderThreat(ChessPosition position, GameSide gameSide, boolean considerKings){
-		List<LocatableChessPiece> pieces = findPieces(gameSide.getOpposite());
+		Set<LocatableChessPiece> pieces = findPieces(gameSide.getOpposite());
 		for(LocatableChessPiece piece : pieces){
 			for(ChessMove move : getMoves(piece, considerKings, false)){
 				if(move.getMoveType().isCanTake() && move.getPieceTo().equals(position)){
@@ -707,7 +710,7 @@ public class ChessBoard implements Serializable, Cloneable {
 	}
 
 	public boolean isInsufficientMaterial(GameSide side){
-		List<ChessPiece> pieces = findRawPieces(side);
+		Set<ChessPiece> pieces = findRawPieces(side);
 		//lone king, lone king + knight/bishop
 		return pieces.size() == 1
 				|| (pieces.size() == 2 && (pieces.contains(new ChessPiece(PieceType.KNIGHT, side))
