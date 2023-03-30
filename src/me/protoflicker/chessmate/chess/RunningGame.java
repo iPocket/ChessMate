@@ -2,6 +2,7 @@ package me.protoflicker.chessmate.chess;
 
 import lombok.Getter;
 import me.protoflicker.chessmate.connection.ClientThread;
+import me.protoflicker.chessmate.console.Logger;
 import me.protoflicker.chessmate.data.DataManager;
 import me.protoflicker.chessmate.data.table.GameTable;
 import me.protoflicker.chessmate.data.table.MovesTable;
@@ -16,6 +17,7 @@ import me.protoflicker.chessmate.protocol.chess.enums.GameStatus;
 import me.protoflicker.chessmate.protocol.chess.enums.MoveType;
 import me.protoflicker.chessmate.protocol.packet.ServerPacket;
 import me.protoflicker.chessmate.protocol.packet.game.update.*;
+import org.mariadb.jdbc.plugin.authentication.standard.ed25519.Utils;
 
 import java.sql.Timestamp;
 import java.util.HashSet;
@@ -30,7 +32,7 @@ public class RunningGame {
 	@Getter
 	private final GameInfo info;
 
-	//imagine this as a concurrent HashSet<ClientThread>, Collections#newSetFromMap doesn't exist for some reason
+	//imagine this as a concurrent HashSet<ClientThread>, Collections#newSetFromMap, which would solve this, doesn't exist for some reason
 	@Getter
 	private final Map<ClientThread, Boolean> connected = new ConcurrentHashMap<>();
 
@@ -151,6 +153,8 @@ public class RunningGame {
 			broadcastPacket(new GameStatusUpdatePacket(info.getGameId(), info.getBoard().getGameStatus()));
 			GameTable.setGameStatus(info.getGameId(), info.getBoard().getGameStatus());
 			GameManager.unloadGameAndKick(this);
+
+			Logger.getInstance().log("Game " + Utils.bytesToHex(info.getGameId()) + " concluded: " + info.getBoard().getGameStatus().getName());
 		}
 	}
 

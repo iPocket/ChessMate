@@ -2,6 +2,7 @@ package me.protoflicker.chessmate.manager;
 
 import me.protoflicker.chessmate.connection.ClientThread;
 import me.protoflicker.chessmate.connection.PacketHandler;
+import me.protoflicker.chessmate.console.Logger;
 import me.protoflicker.chessmate.data.DataManager;
 import me.protoflicker.chessmate.data.table.InvitationsTable;
 import me.protoflicker.chessmate.data.table.UserTable;
@@ -13,6 +14,7 @@ import me.protoflicker.chessmate.protocol.packet.game.invitation.GameInvitePacke
 import me.protoflicker.chessmate.protocol.packet.game.invitation.info.GameInvitesRequestPacket;
 import me.protoflicker.chessmate.protocol.packet.game.invitation.info.response.GameInvitesResponsePacket;
 import me.protoflicker.chessmate.protocol.packet.game.invitation.update.*;
+import org.mariadb.jdbc.plugin.authentication.standard.ed25519.Utils;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -28,8 +30,13 @@ public class InvitationManager {
 		GameInvitation inv = p.getInvitation();
 		if(inv != null
 				&& LoginManager.isAuthorised(c, inv.getInviterId())
-				&& !Arrays.equals(inv.getInviterId(), inv.getInviteeId())
-				&& UserTable.getUsername(inv.getInviteeId()) != null){
+				&& !Arrays.equals(inv.getInviterId(), inv.getInviteeId())){
+			String inviteeUsername = UserTable.getUsername(inv.getInviteeId());
+			if(inviteeUsername == null){
+				c.sendPacket(new GameInviteUnsuccessfulPacket(inv));
+				return;
+			}
+
 			byte[] invitationId = InvitationsTable.createInvitationAndGetId(inv);
 			inv.setInvitationId(invitationId);
 
@@ -42,9 +49,13 @@ public class InvitationManager {
 			for(ClientThread client : clients){
 				client.sendPacket(new GameInvitedPacket(inv));
 			}
-		} else {
-			c.sendPacket(new GameInviteUnsuccessfulPacket(inv));
+
+			Logger.getInstance().log("User created invite " + Utils.bytesToHex(invitationId) + " against " + inviteeUsername + ": "
+					+ inv.getInvitationName());
+			return;
 		}
+
+		c.sendPacket(new GameInviteUnsuccessfulPacket(inv));
 	}
 
 
@@ -65,6 +76,9 @@ public class InvitationManager {
 				for(ClientThread client : clients){
 					client.sendPacket(new GameInviteAcceptedPacket(inv, gameId));
 				}
+
+				Logger.getInstance().log("User accepted invite " + Utils.bytesToHex(inv.getInvitationId())
+						+ " to create game " + Utils.bytesToHex(gameId));
 				return;
 			}
 		}
@@ -77,8 +91,9 @@ public class InvitationManager {
 		GameInviteDeclinePacket p = (GameInviteDeclinePacket) packet;
 
 		byte[] userId = LoginManager.getUserId(c);
-		if(userId != null){
+		if(userId != null && InvitationsTable.getInvitationById(p.getInvitationId()) != null){
 			InvitationsTable.removeReceivedInvitation(p.getInvitationId(), userId);
+			Logger.getInstance().log("User declined invite " + Utils.bytesToHex(p.getInvitationId()));
 		}
 	}
 

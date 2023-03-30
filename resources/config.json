@@ -13,6 +13,6 @@
 	},
 
 	"console": {
-		"debug": true
+		"debug": false
 	}
 }

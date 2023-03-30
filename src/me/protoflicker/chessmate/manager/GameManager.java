@@ -4,6 +4,7 @@ import lombok.Getter;
 import me.protoflicker.chessmate.chess.RunningGame;
 import me.protoflicker.chessmate.connection.ClientThread;
 import me.protoflicker.chessmate.connection.PacketHandler;
+import me.protoflicker.chessmate.console.Logger;
 import me.protoflicker.chessmate.data.DataManager;
 import me.protoflicker.chessmate.protocol.chess.enums.GameInfo;
 import me.protoflicker.chessmate.protocol.chess.enums.GameStatus;
@@ -15,6 +16,7 @@ import me.protoflicker.chessmate.protocol.packet.game.info.response.GamesRespons
 import me.protoflicker.chessmate.protocol.packet.game.request.*;
 import me.protoflicker.chessmate.protocol.packet.game.update.GameNoLongerRunningPacket;
 import me.protoflicker.chessmate.protocol.packet.game.update.GameResponsePacket;
+import org.mariadb.jdbc.plugin.authentication.standard.ed25519.Utils;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -47,6 +49,12 @@ public class GameManager {
 		}
 
 		c.sendPacket(new GameResponsePacket(p.getGameId(), info, game != null));
+
+		if(game != null){
+			Logger.getInstance().log("User entered running game " + Utils.bytesToHex(p.getGameId()));
+		} else {
+			Logger.getInstance().log("User requested historical game " + Utils.bytesToHex(p.getGameId()));
+		}
 
 		if(game != null){
 			game.tryTimingCheck();
@@ -118,6 +126,7 @@ public class GameManager {
 		RunningGame game = getRunningGame(p.getGameId());
 		if(game != null){
 			removeClientFromGame(c, game);
+			Logger.getInstance().log("User left running game " + Utils.bytesToHex(p.getGameId()));
 		}
 	}
 

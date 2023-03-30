@@ -27,8 +27,6 @@ import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.nio.channels.ClosedChannelException;
 import java.sql.SQLException;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -92,7 +90,7 @@ public class ClientThread extends Thread implements DatabaseContainer {
 
 		Server.getInstance().addClientThread(this);
 
-		Logger.getInstance().log("Accepting connection from " + getClientName(),
+		Logger.getInstance().log("Connecting " + getClientName(),
 				Logger.LogLevel.NOTICE);
 
 		try {
@@ -108,7 +106,7 @@ public class ClientThread extends Thread implements DatabaseContainer {
 			ConnectPacket p = (ConnectPacket) packet;
 			if(p.isCompatible()){
 				if(c.connectToDatabase()){
-					Logger.getInstance().log("Successfully accepted connection from " + getClientName());
+					Logger.getInstance().log("Client successfully connected via protocol");
 
 					c.initBaseHandlers();
 

@@ -214,7 +214,7 @@ public class ChessBoard implements Serializable, Cloneable {
 				addMove(moves, MoveType.MOVE, piece, new ChessPosition(loc.getRank() + 1, loc.getFile() - 1));
 
 				if(includeCastle && considerKings && !isUnderThreat(piece, false)
-						&& performedMoves.stream().noneMatch(p ->  p.getMove().getPieceFrom().equals(loc)
+						&& performedMoves.stream().noneMatch(p -> p.getMove().getPieceFrom().equals(loc)
 						|| p.getMove().getPieceTo().equals(loc))){
 					Set<LocatableChessPiece> rooks = findPieces(PieceType.ROOK,
 							piece.getGameSide()).stream().filter(r -> r.getPosition().getRank() == loc.getRank()).collect(Collectors.toSet());
@@ -223,7 +223,7 @@ public class ChessBoard implements Serializable, Cloneable {
 						if(performedMoves.stream().noneMatch(p ->
 								(p.getMove().getMoveType() == MoveType.CASTLE && p.getMove().getGameSide() == piece.getGameSide())
 										|| p.getMove().getPieceFrom().equals(rook.getPosition()) ||
-								p.getMove().getPieceTo().equals(rook.getPosition()))){
+										p.getMove().getPieceTo().equals(rook.getPosition()))){
 							boolean canCastle = true;
 
 							int length = loc.getFileDifference(rook.getPosition());
@@ -238,7 +238,7 @@ public class ChessBoard implements Serializable, Cloneable {
 									canCastle = false;
 									break;
 								} else if((isIncrease ? to.getFile() <= loc.getFile() + kingFile : to.getFile() >= loc.getFile() - kingFile)
-										&& isUnderThreat(to, piece.getGameSide())){//is part of chess rules
+										&& isUnderThreat(to, piece.getGameSide(), false)){//is part of chess rules
 									canCastle = false;
 									break;
 								}
@@ -254,16 +254,12 @@ public class ChessBoard implements Serializable, Cloneable {
 			}
 
 			case QUEEN -> {
-				moves.addAll(getMoves(piece.getVersion(PieceType.ROOK), false, false));
-				moves.addAll(getMoves(piece.getVersion(PieceType.BISHOP), false, false));
-				moves.forEach(m -> m.setPieceMoved(piece.getPiece().getType()));
-				break;
-			}
-
-			case ROOK -> {
 				ChessPosition to;
+
+				//start rook
+
 				if(loc.getRank() < 7){
-					for(int i = loc.getRank()+1; i <= 7; i++){
+					for(int i = loc.getRank() + 1; i <= 7; i++){
 						to = new ChessPosition(i, loc.getFile());
 						addMove(moves, MoveType.MOVE, piece, to);
 						if(getRawPieceAtLocation(to.getRank(), to.getFile()) != null){
@@ -273,7 +269,7 @@ public class ChessBoard implements Serializable, Cloneable {
 				}
 
 				if(loc.getRank() > 0){
-					for(int i = loc.getRank()-1; i >= 0; i--){
+					for(int i = loc.getRank() - 1; i >= 0; i--){
 						to = new ChessPosition(i, loc.getFile());
 						addMove(moves, MoveType.MOVE, piece, to);
 						if(getRawPieceAtLocation(to.getRank(), to.getFile()) != null){
@@ -283,7 +279,7 @@ public class ChessBoard implements Serializable, Cloneable {
 				}
 
 				if(loc.getFile() < 7){
-					for(int i = loc.getFile()+1; i <= 7; i++){
+					for(int i = loc.getFile() + 1; i <= 7; i++){
 						to = new ChessPosition(loc.getRank(), i);
 						addMove(moves, MoveType.MOVE, piece, to);
 						if(getRawPieceAtLocation(to.getRank(), to.getFile()) != null){
@@ -293,7 +289,96 @@ public class ChessBoard implements Serializable, Cloneable {
 				}
 
 				if(loc.getFile() > 0){
-					for(int i = loc.getFile()-1; i >= 0; i--){
+					for(int i = loc.getFile() - 1; i >= 0; i--){
+						to = new ChessPosition(loc.getRank(), i);
+						addMove(moves, MoveType.MOVE, piece, to);
+						if(getRawPieceAtLocation(to.getRank(), to.getFile()) != null){
+							break;
+						}
+					}
+				}
+
+				//end rook
+				//start bishop
+
+				if(loc.getRank() < 7 && loc.getFile() < 7){
+					for(int i = 1; i <= Math.min(Math.abs(loc.getRank() - 7), Math.abs(loc.getFile() - 7)); i++){
+						to = new ChessPosition(loc.getRank() + i, loc.getFile() + i);
+						addMove(moves, MoveType.MOVE, piece, to);
+						if(getRawPieceAtLocation(to.getRank(), to.getFile()) != null){
+							break;
+						}
+					}
+				}
+
+				if(loc.getRank() > 0 && loc.getFile() > 0){
+					for(int i = 1; i <= Math.min(loc.getRank(), loc.getFile()); i++){
+						to = new ChessPosition(loc.getRank() - i, loc.getFile() - i);
+						addMove(moves, MoveType.MOVE, piece, to);
+						if(getRawPieceAtLocation(to.getRank(), to.getFile()) != null){
+							break;
+						}
+					}
+				}
+
+				if(loc.getRank() < 7 && loc.getFile() > 0){
+					for(int i = 1; i <= Math.min(Math.abs(loc.getRank() - 7), loc.getFile()); i++){
+						to = new ChessPosition(loc.getRank() + i, loc.getFile() - i);
+						addMove(moves, MoveType.MOVE, piece, to);
+						if(getRawPieceAtLocation(to.getRank(), to.getFile()) != null){
+							break;
+						}
+					}
+				}
+
+				if(loc.getRank() > 0 && loc.getFile() < 7){
+					for(int i = 1; i <= Math.min(loc.getRank(), Math.abs(loc.getFile() - 7)); i++){
+						to = new ChessPosition(loc.getRank() - i, loc.getFile() + i);
+						addMove(moves, MoveType.MOVE, piece, to);
+						if(getRawPieceAtLocation(to.getRank(), to.getFile()) != null){
+							break;
+						}
+					}
+				}
+
+				//end bishop
+				break;
+			}
+
+			case ROOK -> {
+				ChessPosition to;
+				if(loc.getRank() < 7){
+					for(int i = loc.getRank() + 1; i <= 7; i++){
+						to = new ChessPosition(i, loc.getFile());
+						addMove(moves, MoveType.MOVE, piece, to);
+						if(getRawPieceAtLocation(to.getRank(), to.getFile()) != null){
+							break;
+						}
+					}
+				}
+
+				if(loc.getRank() > 0){
+					for(int i = loc.getRank() - 1; i >= 0; i--){
+						to = new ChessPosition(i, loc.getFile());
+						addMove(moves, MoveType.MOVE, piece, to);
+						if(getRawPieceAtLocation(to.getRank(), to.getFile()) != null){
+							break;
+						}
+					}
+				}
+
+				if(loc.getFile() < 7){
+					for(int i = loc.getFile() + 1; i <= 7; i++){
+						to = new ChessPosition(loc.getRank(), i);
+						addMove(moves, MoveType.MOVE, piece, to);
+						if(getRawPieceAtLocation(to.getRank(), to.getFile()) != null){
+							break;
+						}
+					}
+				}
+
+				if(loc.getFile() > 0){
+					for(int i = loc.getFile() - 1; i >= 0; i--){
 						to = new ChessPosition(loc.getRank(), i);
 						addMove(moves, MoveType.MOVE, piece, to);
 						if(getRawPieceAtLocation(to.getRank(), to.getFile()) != null){
@@ -405,7 +490,7 @@ public class ChessBoard implements Serializable, Cloneable {
 			ChessBoard newBoard = this.clone();
 			newBoard.setGameStatus(GameStatus.ONGOING);
 			newBoard.setDummy(true);
-			for (Iterator<ChessMove> iterator = moves.iterator(); iterator.hasNext(); ) {
+			for(Iterator<ChessMove> iterator = moves.iterator(); iterator.hasNext(); ){
 				ChessMove m = iterator.next();
 				newBoard.performMove(m, new Timestamp(System.currentTimeMillis()));
 				if(newBoard.isKingUnderThreat(piece.getGameSide())){
@@ -654,14 +739,14 @@ public class ChessBoard implements Serializable, Cloneable {
 
 	public ChessPiece getAndRemoveLastTakenPiece(){
 		if(takenPieces.size() >= 1){
-			return takenPieces.remove(takenPieces.size()-1);
+			return takenPieces.remove(takenPieces.size() - 1);
 		} else {
 			return null;
 		}
 	}
 
 	public ChessPiece getLastTakenPiece(){
-		return takenPieces.get(takenPieces.size()-1);
+		return takenPieces.get(takenPieces.size() - 1);
 	}
 
 	public boolean isUnderThreat(LocatableChessPiece piece){
@@ -878,67 +963,8 @@ public class ChessBoard implements Serializable, Cloneable {
 			clone.performedMoves = clonePerformedMoves(performedMoves);
 			clone.takenPieces = clonePieces(takenPieces);
 			return clone;
-		} catch (CloneNotSupportedException e){
+		} catch(CloneNotSupportedException e){
 			throw new AssertionError();
 		}
 	}
-
-//	@Override
-//	public void writeExternal(ObjectOutput o) throws IOException {
-//		o.writeObject(board);
-//		o.writeObject(startingTime);
-//		writeListToObjectOutput(performedMoves, o);
-//		writeListToObjectOutput(takenPieces, o);
-//		o.writeObject(gameStatus);
-//		writeMapToObjectOutput(timeRemaining, o);
-//		o.writeLong(timeConstraint);
-//		o.writeLong(timeIncrement);
-//		o.writeBoolean(isDummy);
-//	}
-//
-//	@Override
-//	public void readExternal(ObjectInput i) throws IOException, ClassNotFoundException {
-//		board = (ChessPiece[][]) i.readObject();
-//		startingTime = (Timestamp) i.readObject();
-//		readObjectInputToList(performedMoves, i);
-//		readObjectInputToList(takenPieces, i);
-//		gameStatus = (GameStatus) i.readObject();
-//		readObjectInputToMap(timeRemaining, i);
-//		timeConstraint = i.readLong();
-//		timeIncrement = i.readLong();
-//		isDummy = i.readBoolean();
-//	}
-//
-//	public static <T> void writeListToObjectOutput(List<T> list, ObjectOutput output) throws IOException{
-//		output.writeInt(list.size());
-//		for(T element : list){
-//			output.writeObject(element);
-//		}
-//	}
-//
-//	public static <T, K> void writeMapToObjectOutput(Map<T, K> map, ObjectOutput output) throws IOException{
-//		output.writeInt(map.size());
-//		for(Map.Entry<T, K> entry : map.entrySet()){
-//			output.writeObject(entry.getKey());
-//			output.writeObject(entry.getValue());
-//		}
-//	}
-//
-//	public static <T> void readObjectInputToList(List<T> emptyList, ObjectInput input)
-//			throws IOException, ClassNotFoundException{
-//		int entries = input.readInt();
-//		while(entries > 0){
-//			emptyList.add((T) input.readObject());
-//			entries--;
-//		}
-//	}
-//
-//	public static <T, K> void readObjectInputToMap(Map<T, K> emptyMap, ObjectInput input)
-//			throws IOException, ClassNotFoundException{
-//		int entries = input.readInt();
-//		while(entries > 0){
-//			emptyMap.put((T) input.readObject(), (K) input.readObject());
-//			entries--;
-//		}
-//	}
 }

@@ -6,17 +6,13 @@ import me.protoflicker.chessmate.protocol.packet.ClientPacket;
 
 public class ConnectPacket extends Packet implements ClientPacket {
 
-	public static final String PROTOCOL_VERSION = "0.5";
+	public static final String PROTOCOL_VERSION = "0.6";
 
 	@Getter
 	private final String expectedVersion;
 
 	public ConnectPacket(String expectedVersion){
 		this.expectedVersion = expectedVersion;
-	}
-
-	public static String getUsernameRegex() {
-		return "^[a-zA-Z0-9._-]{3,}$";
 	}
 
     public boolean isCompatible(){

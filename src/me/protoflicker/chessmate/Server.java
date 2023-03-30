@@ -90,7 +90,7 @@ public class Server {
 		} else {
 			if(!thread.equals(Main.MAIN_THREAD)){
 				Logger.getInstance().log("Passing main thread database connection to thread "
-						+ thread.getName(), Logger.LogLevel.ERROR);
+						+ thread.getName(), Logger.LogLevel.DEBUG);
 			}
 
 			return Server.getInstance().getDatabase();
@@ -190,9 +190,6 @@ public class Server {
 
 			//noinspection LoopConditionNotUpdatedInsideLoop
 			while(!clientThreads.isEmpty()){
-				for(ClientThread thread : clientThreads){
-					thread.tryClose();
-				}
 				continue;
 			}
 

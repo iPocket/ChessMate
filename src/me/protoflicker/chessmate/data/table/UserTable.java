@@ -53,6 +53,24 @@ public abstract class UserTable {
 		}
 	}
 
+	public static void setUsername(byte[] userId, String username){
+		String statement =
+				"""
+				UPDATE `Users`
+				SET username = ?
+				WHERE userId = ?;
+				""";
+
+		try (PreparedStatement s = Server.getThreadDatabase().getConnection().prepareStatement(statement)){
+			s.setString(1, username);
+			s.setBytes(2, userId);
+			s.executeUpdate();
+
+		} catch (SQLException e){
+			return; //no exception needed
+		}
+	}
+
 	public static String getHashedPassword(byte[] userId){
 		String statement =
 				"""
@@ -213,6 +231,21 @@ public abstract class UserTable {
 			s.setString(2, hashedPassword);
 			s.setDate(3, birthday);
 			s.setInt(4, type.getCode());
+			s.executeUpdate();
+		} catch (SQLException e){
+			throw new RuntimeException(e);
+		}
+	}
+
+	public static void deleteUser(byte[] userId){
+		String statement =
+				"""
+				DELETE FROM `Users`
+				WHERE userId = ?;
+				""";
+
+		try (PreparedStatement s = Server.getThreadDatabase().getConnection().prepareStatement(statement)){
+			s.setBytes(1, userId);
 			s.executeUpdate();
 		} catch (SQLException e){
 			throw new RuntimeException(e);

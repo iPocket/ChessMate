@@ -3,11 +3,13 @@ package me.protoflicker.chessmate.manager;
 import com.google.common.hash.Hashing;
 import me.protoflicker.chessmate.connection.ClientThread;
 import me.protoflicker.chessmate.connection.PacketHandler;
+import me.protoflicker.chessmate.console.Logger;
 import me.protoflicker.chessmate.data.table.TokenTable;
 import me.protoflicker.chessmate.data.table.UserTable;
 import me.protoflicker.chessmate.protocol.chess.enums.AccountType;
 import me.protoflicker.chessmate.protocol.packet.ClientPacket;
-import me.protoflicker.chessmate.protocol.packet.connection.ConnectPacket;
+import me.protoflicker.chessmate.protocol.packet.TestPacket;
+import me.protoflicker.chessmate.protocol.packet.user.UserInfo;
 import me.protoflicker.chessmate.protocol.packet.user.login.LoginByPasswordPacket;
 import me.protoflicker.chessmate.protocol.packet.user.login.LoginByTokenPacket;
 import me.protoflicker.chessmate.protocol.packet.user.login.response.LoginSuccessfulPacket;
@@ -21,6 +23,7 @@ import me.protoflicker.chessmate.protocol.packet.user.setting.response.UserPassw
 import me.protoflicker.chessmate.protocol.packet.user.setting.response.UserPasswordChangeSuccessfulPacket;
 import me.protoflicker.chessmate.protocol.packet.user.setting.response.UserPasswordChangeUnsuccessfulPacket;
 import me.protoflicker.chessmate.protocol.packet.user.setting.response.UserPasswordChangeWrongPasswordPacket;
+import org.mariadb.jdbc.plugin.authentication.standard.ed25519.Utils;
 
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -37,7 +40,7 @@ public abstract class LoginManager {
 
 	private static final Map<ClientThread, byte[]> loggedIn = new ConcurrentHashMap<>();
 
-	private static String hashPassword(String password){
+	public static String hashPassword(String password){
 		return Hashing.sha256().hashString(password + SALT, StandardCharsets.UTF_8).toString();
 	}
 
@@ -57,13 +60,20 @@ public abstract class LoginManager {
 
 		UserTable.updateLastLogin(userId);
 
+		UserInfo userInfo = UserTable.getUserInfo(userId);
 		if(register){
-			c.sendPacket(new RegisterSuccessfulPacket(userId, UserTable.getUserInfo(userId), token));
+			c.sendPacket(new RegisterSuccessfulPacket(userId, userInfo, token));
 		} else {
-			c.sendPacket(new LoginSuccessfulPacket(userId, UserTable.getUserInfo(userId), token));
+			c.sendPacket(new LoginSuccessfulPacket(userId, userInfo, token));
 		}
 
+		assert userInfo != null;
+
 		loggedIn.put(c, userId);
+
+		Logger.getInstance().log((register ? "Registered" : "Logged in") + " as " + userInfo.getUsername() + " ("
+				+ Utils.bytesToHex(userId)
+				+ ") via " + (sendToken ? "password" : "token"));
 	}
 
 	public static byte[] getUserId(ClientThread c){
@@ -86,11 +96,11 @@ public abstract class LoginManager {
 	}
 
 	public static boolean isUsernameValid(String username){
-		return username != null && username.length() <= 32 && username.length() >= 2 && username.matches(ConnectPacket.getUsernameRegex());
+		return TestPacket.isUsernameValid(username);
 	}
 
 	public static boolean isPasswordValid(String password){
-		return password != null && password.length() >= 8;
+		return TestPacket.isPasswordValid(password);
 	}
 	
 	
@@ -117,8 +127,10 @@ public abstract class LoginManager {
 			}
 
 			nextAllowedToLogin.put(c, System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(3));
+			Logger.getInstance().log("Client failed to login as " + p.getUsername() + " via password");
 			c.sendPacket(new LoginUnsuccessfulPacket());
 		} else {
+			Logger.getInstance().log("Client throttled to login as " + p.getUsername() + " via password");
 			c.sendPacket(new LoginThrottledPacket());
 		}
 	}
@@ -143,9 +155,11 @@ public abstract class LoginManager {
 				return;
 			}
 
+			Logger.getInstance().log("Client failed to login via token");
 			c.sendPacket(new LoginUnsuccessfulPacket());
 			nextAllowedToLoginByToken.put(c, System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(30));
 		} else {
+			Logger.getInstance().log("Client throttled to login via token");
 			c.sendPacket(new LoginThrottledPacket());
 		}
 	}
@@ -196,17 +210,22 @@ public abstract class LoginManager {
 		}
 		
 		if(!isPasswordValid(p.getNewPassword())){
+			Logger.getInstance().log("User failed to change password: bad password");
 			c.sendPacket(new UserPasswordChangeBadPasswordPacket());
 			return;
 		}
 
 		if(!isPasswordCorrect(userId, p.getOldPassword())){
+			Logger.getInstance().log("User failed to change password: wrong password");
 			c.sendPacket(new UserPasswordChangeWrongPasswordPacket()); //could consider throttling here, potential vulnerability
 			return;
 		}
 		
 		
 		UserTable.setHashedPassword(userId, hashPassword(p.getNewPassword()));
+
+		Logger.getInstance().log("User successfully changed password");
+
 		c.sendPacket(new UserPasswordChangeSuccessfulPacket());
 	}
 
@@ -219,6 +238,9 @@ public abstract class LoginManager {
 		}
 
 		TokenTable.removeTokenIfAuthorised(userId, p.getToken());
+
+		Logger.getInstance().log("User logged out");
+
 		c.tryClose();
 	}
 

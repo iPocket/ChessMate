@@ -2,10 +2,11 @@ package me.protoflicker.chessmate;
 
 import me.protoflicker.chessmate.console.ConsoleThread;
 import me.protoflicker.chessmate.console.Logger;
+import me.protoflicker.chessmate.protocol.packet.connection.ConnectPacket;
 import me.protoflicker.chessmate.util.JSONConfig;
 
 import java.io.File;
-import java.net.URL;
+import java.io.InputStream;
 import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
@@ -15,7 +16,7 @@ public class Main {
 	public static final String WORKING_DIRECTORY = System.getProperty("user.dir");
 
 	public static final String NAME = "ChessMate";
-	public static final String VERSION = "1.0";
+	public static final String VERSION = ConnectPacket.PROTOCOL_VERSION + ".0";
 
 	public static final String CONFIG_FOLDER = WORKING_DIRECTORY + File.separator + "config";
 
@@ -28,7 +29,7 @@ public class Main {
 		Logger.getInstance().log("Starting " + NAME + " v" + VERSION + "...");
 
 		CONSOLE_THREAD = new ConsoleThread();
-//		CONSOLE_THREAD.start();
+		CONSOLE_THREAD.start();
 
 		Logger.getInstance().log("Loading config file...");
 
@@ -73,12 +74,10 @@ public class Main {
 			}
 		}
 
-		try {
+		try(InputStream defaultConfigStream = Main.class.getClassLoader().getResourceAsStream("config.json")){
 			if(configFile.createNewFile()){
-				URL defaultConfigUrl = Main.class.getClassLoader().getResource("config.json"); //TODO: Use resource stream so that this works in .jar
-				assert defaultConfigUrl != null; //config file should always exist in the bundled resources root
-				File defaultConfigFile = new File(defaultConfigUrl.toURI());
-				Files.copy(defaultConfigFile.toPath(), configFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+				assert defaultConfigStream != null; //config file should always exist in the bundled resources root
+				Files.copy(defaultConfigStream, configFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
 			}
 		} catch (Exception e){
 			Logger.getInstance().log("Unable to create new config file at " + configFile.getPath(), Logger.LogLevel.FATAL);
