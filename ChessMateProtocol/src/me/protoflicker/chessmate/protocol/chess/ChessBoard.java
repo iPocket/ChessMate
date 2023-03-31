@@ -816,7 +816,7 @@ public class ChessBoard implements Serializable, Cloneable {
 	}
 
 	public long getTimeOfLastMove(){
-		if(performedMoves.size() <= 1){
+		if(performedMoves.size() <= 2){
 			return System.currentTimeMillis(); //well one or zero moves were made, maybe refractor this elsewhere
 		} else {
 			return getLastPerformedMove().getTimePlayed().getTime();

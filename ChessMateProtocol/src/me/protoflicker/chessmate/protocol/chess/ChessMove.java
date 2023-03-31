@@ -61,6 +61,7 @@ public class ChessMove implements Serializable, Cloneable {
 		var that = (ChessMove) obj;
 		return this.moveType == that.moveType && this.gameSide == that.gameSide && this.pieceMoved == that.pieceMoved
 				&& this.pieceFrom.equals(that.pieceFrom) && this.pieceTo.equals(that.pieceTo)/* && this.promotionPiece == that.promotionPiece*/;
+				//don't compare promotion piece, usually only will ever needed to be compared explicitly
 	}
 
 	@Override

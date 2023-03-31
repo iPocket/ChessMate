@@ -142,7 +142,7 @@ public final class MovesTable {
 			);
 	}
 
-	//moveNumber SMALLINT(16) UNSIGNED AUTO_INCREMENT NOT NULL,
+	//moveNumber SMALLINT(16) UNSIGNED AUTO_INCREMENT NOT NULL, will not work
 	public static void createTable(Database database){
 		String statement =
 				"""
@@ -156,7 +156,7 @@ public final class MovesTable {
 				pieceMoved CHAR(1),
 				promotionPiece CHAR(1),
 				PRIMARY KEY (gameId, moveNumber),
-				FOREIGN KEY (gameId) REFERENCES Games(gameId) ON DELETE CASCADE
+				FOREIGN KEY (gameId)  REFERENCES Games(gameId) ON DELETE CASCADE
 				);
 				""";
 

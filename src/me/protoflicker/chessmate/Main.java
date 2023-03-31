@@ -29,7 +29,6 @@ public class Main {
 		Logger.getInstance().log("Starting " + NAME + " v" + VERSION + "...");
 
 		CONSOLE_THREAD = new ConsoleThread();
-		CONSOLE_THREAD.start();
 
 		Logger.getInstance().log("Loading config file...");
 

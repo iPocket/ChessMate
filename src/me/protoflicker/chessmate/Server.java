@@ -32,12 +32,7 @@ public class Server {
 
 
 
-
-
 	private ServerSocket serverSocket;
-
-
-
 
 	@Getter
 	private final JSONConfig config;
@@ -113,6 +108,7 @@ public class Server {
 			throw new RuntimeException(e);
 		}
 
+		Main.CONSOLE_THREAD.start();
 		Runtime.getRuntime().addShutdownHook(new Thread(null, this::closeServer, "ShutdownHandler"));
 		Logger.initExceptionHandler(this::closeServer);
 
@@ -180,6 +176,8 @@ public class Server {
 	}
 
 	private synchronized void closeServer(){
+		Main.CONSOLE_THREAD.interrupt();
+
 		Logger.getInstance().log("Shutting down server, may take 30 seconds...");
 
 		shuttingDown = true;

@@ -160,7 +160,7 @@ public class InvitationsTable {
 						expiry TIMESTAMP NOT NULL,
 						invitationName VARCHAR(64) NOT NULL,
 						gameName VARCHAR(64) DEFAULT "Unnamed Game" NOT NULL,
-						startingBoard CHAR(191) DEFAULT ("%MedicBag%") NOT NULL,
+						startingBoard CHAR(191) DEFAULT ("%replacement%") NOT NULL,
 						timeConstraint INT(16) UNSIGNED NOT NULL,
 						timeIncrement INT(16) UNSIGNED NOT NULL,
 						inviterSide TINYINT(1) UNSIGNED NOT NULL,
@@ -168,7 +168,7 @@ public class InvitationsTable {
 						FOREIGN KEY (inviterId) REFERENCES Users(userId) ON DELETE CASCADE,
 						FOREIGN KEY (inviteeId) REFERENCES Users(userId) ON DELETE CASCADE
 						);
-							""".replace("%MedicBag%", ChessUtils.getStartingBoardText());
+							""".replace("%replacement%", ChessUtils.getStartingBoardText());
 
 			try (PreparedStatement s = database.getConnection().prepareStatement(statement)) {
 				s.executeUpdate();
@@ -184,8 +184,8 @@ public class InvitationsTable {
 						ON SCHEDULE EVERY 1 DAY
 						STARTS CURRENT_TIMESTAMP
 							DO
-								DELETE FROM %MedicBag%.Invitations WHERE expiry < NOW();
-					""".replace("%MedicBag%", Server.getInstance().getDataManager().getDatabaseName());
+								DELETE FROM %replacement%.Invitations WHERE expiry < NOW();
+					""".replace("%replacement%", Server.getInstance().getDataManager().getDatabaseName());
 
 			try (PreparedStatement s = database.getConnection().prepareStatement(statement)) {
 				s.executeUpdate();

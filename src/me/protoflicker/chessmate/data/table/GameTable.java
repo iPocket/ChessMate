@@ -195,13 +195,13 @@ public final class GameTable {
 				gameId BINARY(16) DEFAULT (UNHEX(REPLACE(UUID(), "-",""))) NOT NULL UNIQUE,
 				gameName VARCHAR(64) DEFAULT "Unnamed Game" NOT NULL,
 				startTime TIMESTAMP DEFAULT (NOW()) NOT NULL,
-				startingBoard CHAR(191) DEFAULT ("%MedicBag%") NOT NULL,
+				startingBoard CHAR(191) DEFAULT ("%replacement%") NOT NULL,
 				timeConstraint INT(16) UNSIGNED NOT NULL,
 				timeIncrement INT(16) UNSIGNED NOT NULL,
 				status TINYINT(2) UNSIGNED DEFAULT 0 NOT NULL,
 				PRIMARY KEY (gameId)
 				);
-				""".replace("%MedicBag%", ChessUtils.getStartingBoardText());
+				""".replace("%replacement%", ChessUtils.getStartingBoardText());
 
 		try (PreparedStatement s = database.getConnection().prepareStatement(statement)){
 			s.executeUpdate();

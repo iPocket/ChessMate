@@ -97,8 +97,8 @@ public class TokenTable {
 						ON SCHEDULE EVERY 1 DAY
 						STARTS CURRENT_TIMESTAMP
 							DO
-								DELETE FROM %MedicBag%.Tokens WHERE expiry < NOW();
-					""".replace("%MedicBag%", Server.getInstance().getDataManager().getDatabaseName());
+								DELETE FROM %replacement%.Tokens WHERE expiry < NOW();
+					""".replace("%replacement%", Server.getInstance().getDataManager().getDatabaseName());
 
 			try (PreparedStatement s = database.getConnection().prepareStatement(statement)) {
 				s.executeUpdate();
